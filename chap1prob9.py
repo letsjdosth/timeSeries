@@ -193,10 +193,9 @@ class Chap1Prob9(MCMC_Core.MCMC_Gibbs):
 
 
 inst_simulator = TAR_Simulator()
-sim_path = inst_simulator.sample_path_generator(10000)
-# print(len(sim_path))
-# plt.plot(sim_path)
-# plt.show()
+sim_path = inst_simulator.sample_path_generator(1000)
+plt.plot(sim_path)
+plt.show()
 
 initial = [0,0,1,1,0]
 gibbs_inst = Chap1Prob9(initial, sim_path)
@@ -205,10 +204,10 @@ gibbs_inst.generate_samples(3600) # set the window-size in theta's MH smaller an
 diag_inst = MCMC_Core.MCMC_Diag()
 diag_inst.set_mc_sample_from_MCMC_instance(gibbs_inst)
 diag_inst.set_variable_names(["phi1", "phi2", "v1", "v2", "theta"])
-diag_inst.show_traceplot((2,3))
+diag_inst.show_traceplot((3,2))
 diag_inst.burnin(600)
 diag_inst.print_summaries(4)
-diag_inst.show_traceplot((2,3))
-diag_inst.show_acf(30, (2,3))
-diag_inst.show_hist((2,3))
+diag_inst.show_traceplot((3,2))
+diag_inst.show_acf(30, (3,2))
+diag_inst.show_hist((3,2))
 

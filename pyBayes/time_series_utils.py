@@ -12,7 +12,7 @@ def difference_oper(sequence: list):
         before = now
     return diff_sequence
 
-def ar_polynomial_roots(phi_samples: list[list[float]]) -> list[list[tuple[float, float]]]:
+def ar_polynomial_roots(phi_samples: list[list[float]], reciprocal: bool) -> list[list[tuple[float, float]]]:
     # return [[(r, \theta), (r, \theta),...]] with increasing order w.r.t r
     def sort_key1(c):
         return c[0]
@@ -23,9 +23,12 @@ def ar_polynomial_roots(phi_samples: list[list[float]]) -> list[list[tuple[float
         ar_poly = np.polynomial.polynomial.Polynomial(coeff)
         ar_poly_roots = ar_poly.roots()
         ar_poly_polar_roots = [cmath.polar(x) for x in ar_poly_roots] # r,\theta
+        if reciprocal:
+            ar_poly_polar_roots = [(1/r,-theta) for r,theta in ar_poly_polar_roots]
         ar_poly_polar_roots.sort(key=sort_key1, reverse=False)
         ar_poly_polar_roots_at_samples.append(ar_poly_polar_roots)
     print("# of AR roots: ", len(ar_poly_polar_roots_at_samples[0]))
+    
     return ar_poly_polar_roots_at_samples
 
 if __name__=="__main__":

@@ -55,7 +55,7 @@ diag_inst = MCMC_Diag()
 diag_inst.set_mc_samples_from_list(MC_samples)
 diag_inst.set_variable_names(["phi"+str(i) for i in range(1,9)]+["v"])
 diag_inst.print_summaries(5)
-# diag_inst.show_hist((3,3))
+diag_inst.show_hist((3,3))
 
 
 # ar_poly_polar_roots_at_samples = []
@@ -67,47 +67,70 @@ diag_inst.print_summaries(5)
 #     ar_poly_polar_roots_at_samples.append([cmath.polar(x) for x in ar_poly_roots])
 
 phi_samples = [sample[0:8] for sample in diag_inst.MC_sample]
-ar_poly_polar_roots_at_samples = ts.ar_polynomial_roots(phi_samples)
-
-# smallest 
-def sort_key1(c):
-    return c[0]
-
-ar_char_smallest_moduli = []
-for roots in ar_poly_polar_roots_at_samples:
-    roots.sort(key=sort_key1, reverse=False)
-    ar_char_smallest_moduli.append(roots[0][0])
-
-plt.hist(ar_char_smallest_moduli, bins=60)
-plt.xlim(0, 1.75)
-plt.title("smallest modulus")
-plt.show()
+ar_poly_polar_rec_roots_at_samples = ts.ar_polynomial_roots(phi_samples, reciprocal=True)
 
 
 # longest period
-
 def sort_key2(c):
     return abs(c[1])
 
-ar_char_longest_amplitude = []
+ar_char_amp_of_longest_period = []
 ar_char_longest_period = []
 
-for roots in ar_poly_polar_roots_at_samples:
-    roots.sort(key=sort_key2, reverse=False)
-    for root in roots:
-        if root[1] == 0: #real root
+for rec_roots in ar_poly_polar_rec_roots_at_samples:
+    rec_roots.sort(key=sort_key2, reverse=False)
+    for rec_root in rec_roots:
+        if rec_root[1] == 0: #real root
             pass
         else:
-            ar_char_longest_period.append(2*math.pi/abs(root[1]))
-            ar_char_longest_amplitude.append(root[0])
+            ar_char_longest_period.append(2*math.pi/abs(rec_root[1]))
+            ar_char_amp_of_longest_period.append(rec_root[0])
             break
-
+print("mean:",np.mean(ar_char_longest_period), 
+        ", var:",np.var(ar_char_longest_period), 
+        ", 95%CI:",np.quantile(ar_char_longest_period,[0.05, 0.95]))
 plt.hist(ar_char_longest_period, bins=1200)
 plt.xlim(0, 40)
-plt.title("period(longest)")
+plt.title("the longest period")
 plt.show()
 
-plt.hist(ar_char_longest_amplitude, bins=60)
+print("mean:",np.mean(ar_char_amp_of_longest_period), 
+        ", var:",np.var(ar_char_amp_of_longest_period), 
+        ", 95%CI:",np.quantile(ar_char_amp_of_longest_period,[0.05, 0.95]))
+plt.hist(ar_char_amp_of_longest_period, bins=60)
 plt.xlim(0, 1.75)
-plt.title("amplitude of the longest period case")
+plt.title("the amplitude of the longest period case")
 plt.show()
+
+
+
+# largest moduli of reciprocal roots (Is the series stable? // how much dominant is the oscilatory effect?)
+def sort_key1(c):
+    return c[0]
+
+ar_char_largest_moduli = []
+
+ar_char_largest_moduli_real = [] #for comparing amplitudes between oscilatory vs exp-decaying componants
+ar_char_largest_moduli_imaginary = []
+
+for rec_roots in ar_poly_polar_rec_roots_at_samples:
+    rec_roots.sort(key=sort_key1, reverse=True)
+    largest_rec_root = rec_roots[0]
+    ar_char_largest_moduli.append(largest_rec_root[0])
+    if largest_rec_root[1] == 0: #real
+        ar_char_largest_moduli_real.append(largest_rec_root[0])
+    else:
+        ar_char_largest_moduli_imaginary.append(largest_rec_root[0])
+
+print("mean:", np.mean(ar_char_largest_moduli), 
+        ", var:", np.var(ar_char_largest_moduli), 
+        ", 95%CI:", np.quantile(ar_char_largest_moduli,[0.05, 0.95]))
+plt.hist(ar_char_largest_moduli, bins=60)
+plt.xlim(0, 1.5)
+plt.title("the largest modulus (among all real and imaginary roots)")
+plt.show()
+
+
+# compare?
+print(np.count_nonzero(ar_char_largest_moduli_real), 
+        np.count_nonzero(ar_char_largest_moduli_imaginary))
