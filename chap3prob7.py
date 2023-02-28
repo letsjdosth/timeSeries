@@ -26,10 +26,10 @@ if __name__=="__main__":
     plt.show()
     
     x_fft = np.fft.rfft(x_path_T500)
-    periodogram_x = [f*f.conjugate()/(512*2*np.pi) for f in x_fft]
+    periodogram_x = [f*f.conjugate()/(500*2*np.pi) for f in x_fft]
     periodogram_x[0] = np.mean(x_path_T500)
     y_fft = np.fft.rfft(y_path_T500)
-    periodogram_y = [f*f.conjugate()/(512*2*np.pi) for f in y_fft]
+    periodogram_y = [f*f.conjugate()/(500*2*np.pi) for f in y_fft]
     periodogram_y[0] = np.mean(y_path_T500)
 
     x_true_spec_density, grid = arma_inst.spectral_density(500, domain_0pi=True)
@@ -114,8 +114,8 @@ if __name__=="__main__":
     post_spec_mean = np.mean(np.array(post_spec_list), axis=0)
     
     ax2[0].plot(grid, post_spec_mean, color="green")
-    ax2[0].set_title("reconstructed from fited AR(2)")
+    ax2[0].set_title("mean spec.density from AR(2) posterior samples")
     ax2[1].plot(grid, y_true_spec_density, color="#ff7f0e")
     ax2[1].plot(grid, post_spec_mean, color="green")
-    ax2[1].set_title("True vs Fitted AR(2)")
+    ax2[1].set_title("true(y) vs posterior mean spec.density from AR(2)")
     plt.show()
