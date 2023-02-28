@@ -5,7 +5,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 
-import pyBayes.time_series_utils as ts
+import ts_util.time_series_utils as ts
 from pyBayes.rv_gen_gamma import Sampler_univariate_InvGamma
 from pyBayes.MCMC_Core import MCMC_Diag
 
@@ -57,15 +57,6 @@ diag_inst.set_variable_names(["phi"+str(i) for i in range(1,9)]+["v"])
 diag_inst.print_summaries(5)
 diag_inst.show_hist((3,3))
 
-
-# ar_poly_polar_roots_at_samples = []
-# for sample in diag_inst.MC_sample:
-#     phi_sample = ([1] + [-x for x in sample])[0:9]
-#     # print(phi_sample)
-#     ar_poly = np.polynomial.polynomial.Polynomial(phi_sample)
-#     ar_poly_roots = ar_poly.roots()
-#     ar_poly_polar_roots_at_samples.append([cmath.polar(x) for x in ar_poly_roots])
-
 phi_samples = [sample[0:8] for sample in diag_inst.MC_sample]
 ar_poly_polar_rec_roots_at_samples = ts.ar_polynomial_roots(phi_samples, reciprocal=True)
 
@@ -74,7 +65,7 @@ ar_poly_polar_rec_roots_at_samples = ts.ar_polynomial_roots(phi_samples, recipro
 def sort_key2(c):
     return abs(c[1])
 
-ar_char_amp_of_longest_period = []
+ar_char_modulus_of_longest_period = []
 ar_char_longest_period = []
 
 for rec_roots in ar_poly_polar_rec_roots_at_samples:
@@ -84,7 +75,7 @@ for rec_roots in ar_poly_polar_rec_roots_at_samples:
             pass
         else:
             ar_char_longest_period.append(2*math.pi/abs(rec_root[1]))
-            ar_char_amp_of_longest_period.append(rec_root[0])
+            ar_char_modulus_of_longest_period.append(rec_root[0])
             break
 print("mean:",np.mean(ar_char_longest_period), 
         ", var:",np.var(ar_char_longest_period), 
@@ -94,10 +85,10 @@ plt.xlim(0, 40)
 plt.title("the longest period")
 plt.show()
 
-print("mean:",np.mean(ar_char_amp_of_longest_period), 
-        ", var:",np.var(ar_char_amp_of_longest_period), 
-        ", 95%CI:",np.quantile(ar_char_amp_of_longest_period,[0.05, 0.95]))
-plt.hist(ar_char_amp_of_longest_period, bins=60)
+print("mean:",np.mean(ar_char_modulus_of_longest_period), 
+        ", var:",np.var(ar_char_modulus_of_longest_period), 
+        ", 95%CI:",np.quantile(ar_char_modulus_of_longest_period,[0.05, 0.95]))
+plt.hist(ar_char_modulus_of_longest_period, bins=60)
 plt.xlim(0, 1.75)
 plt.title("the amplitude of the longest period case")
 plt.show()
@@ -108,29 +99,29 @@ plt.show()
 def sort_key1(c):
     return c[0]
 
-ar_char_largest_moduli = []
+ar_char_largest_modulus = []
 
-ar_char_largest_moduli_real = [] #for comparing amplitudes between oscilatory vs exp-decaying componants
-ar_char_largest_moduli_imaginary = []
+ar_char_largest_modulus_real = [] #for comparing amplitudes between oscilatory vs exp-decaying componants
+ar_char_largest_modulus_imaginary = []
 
 for rec_roots in ar_poly_polar_rec_roots_at_samples:
     rec_roots.sort(key=sort_key1, reverse=True)
     largest_rec_root = rec_roots[0]
-    ar_char_largest_moduli.append(largest_rec_root[0])
+    ar_char_largest_modulus.append(largest_rec_root[0])
     if largest_rec_root[1] == 0: #real
-        ar_char_largest_moduli_real.append(largest_rec_root[0])
+        ar_char_largest_modulus_real.append(largest_rec_root[0])
     else:
-        ar_char_largest_moduli_imaginary.append(largest_rec_root[0])
+        ar_char_largest_modulus_imaginary.append(largest_rec_root[0])
 
-print("mean:", np.mean(ar_char_largest_moduli), 
-        ", var:", np.var(ar_char_largest_moduli), 
-        ", 95%CI:", np.quantile(ar_char_largest_moduli,[0.05, 0.95]))
-plt.hist(ar_char_largest_moduli, bins=60)
+print("mean:", np.mean(ar_char_largest_modulus), 
+        ", var:", np.var(ar_char_largest_modulus), 
+        ", 95%CI:", np.quantile(ar_char_largest_modulus,[0.05, 0.95]))
+plt.hist(ar_char_largest_modulus, bins=60)
 plt.xlim(0, 1.5)
 plt.title("the largest modulus (among all real and imaginary roots)")
 plt.show()
 
 
 # compare?
-print(np.count_nonzero(ar_char_largest_moduli_real), 
-        np.count_nonzero(ar_char_largest_moduli_imaginary))
+print(np.count_nonzero(ar_char_largest_modulus_real), 
+        np.count_nonzero(ar_char_largest_modulus_imaginary))
