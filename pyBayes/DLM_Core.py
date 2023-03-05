@@ -48,6 +48,7 @@ class DLM_D0_container:
         self.Wst_sys_eq_scale_free_covariance = Wst_t_seq
 
     def set_Ft_design_mat(self, Ft_seq: list[np.array]):
+        "not F_t^T, but F_t"
         self.F_obs_eq_design = Ft_seq
 
     def set_Gt_transition_mat(self, Gt_seq: np.array):
