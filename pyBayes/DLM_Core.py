@@ -38,48 +38,48 @@ class DLM_D0_container:
 
 
     # == setters: with an input as a sequence ==
-    def set_Vt_obs_eq_covariance(self, Vt_seq: list[np.array]):
+    def set_Vt_obs_eq_covariance(self, Vt_seq: list[np.ndarray]):
         self.V_obs_eq_covariance = Vt_seq
 
-    def set_Wt_state_error_cov(self, Wt_seq: list[np.array]):
+    def set_Wt_state_error_cov(self, Wt_seq: list[np.ndarray]):
         self.W_sys_eq_covariance = Wt_seq
 
-    def set_Wst_t_state_error_scale_free_cov(self, Wst_t_seq: list[np.array]):
+    def set_Wst_t_state_error_scale_free_cov(self, Wst_t_seq: list[np.ndarray]):
         self.Wst_sys_eq_scale_free_covariance = Wst_t_seq
 
-    def set_Ft_design_mat(self, Ft_seq: list[np.array]):
+    def set_Ft_design_mat(self, Ft_seq: list[np.ndarray]):
         "not F_t^T, but F_t"
         self.F_obs_eq_design = Ft_seq
 
-    def set_Gt_transition_mat(self, Gt_seq: np.array):
+    def set_Gt_transition_mat(self, Gt_seq: np.ndarray):
         self.G_sys_eq_transition = Gt_seq
 
     def set_ut_covariate_and_coeff(self,
-            ut_covariates_seq: list[np.array],
-            obs_eq_coeff_seq: list[np.array], state_eq_coeff_seq: list[np.array]):
+            ut_covariates_seq: list[np.ndarray],
+            obs_eq_coeff_seq: list[np.ndarray], state_eq_coeff_seq: list[np.ndarray]):
         self.u_covariate = ut_covariates_seq
         self.u_coeff_obs_eq_seq = obs_eq_coeff_seq
         self.u_coeff_state_eq_seq = state_eq_coeff_seq
 
     # == setters: with an input as a point (when the value is constant on time in the model) ==
-    def set_V_const_obs_eq_covariance(self, V: np.array):
+    def set_V_const_obs_eq_covariance(self, V: np.ndarray):
         self.V_obs_eq_covariance = [V for _ in range(self.y_len)]
 
-    def set_W_const_state_error_cov(self, W: np.array):
+    def set_W_const_state_error_cov(self, W: np.ndarray):
         self.W_sys_eq_covariance = [W for _ in range(self.y_len)]
 
-    def set_Wst_const_state_error_scale_free_cov(self, Wst: np.array):
+    def set_Wst_const_state_error_scale_free_cov(self, Wst: np.ndarray):
         self.Wst_sys_eq_scale_free_covariance = [Wst for _ in range(self.y_len)]
 
-    def set_F_const_design_mat(self, F: np.array):
+    def set_F_const_design_mat(self, F: np.ndarray):
         self.F_obs_eq_design = [F for _ in range(self.y_len)]
 
-    def set_G_const_transition_mat(self, G: np.array):
+    def set_G_const_transition_mat(self, G: np.ndarray):
         self.G_sys_eq_transition = [G for _ in range(self.y_len)]
 
     def set_u_const_covariate_and_coeff(self,
-            u: np.array,
-            obs_eq_coeff: np.array, state_eq_coeff: np.array):
+            u: np.ndarray,
+            obs_eq_coeff: np.ndarray, state_eq_coeff: np.ndarray):
         self.u_covariate = [u for _ in range(self.y_len)]
         self.u_coeff_obs_eq_seq = [obs_eq_coeff for _ in range(self.y_len)]
         self.u_coeff_state_eq_seq = [state_eq_coeff for _ in range(self.y_len)]
@@ -123,7 +123,7 @@ class DLM_simulator:
 
 
 class DLM_full_D0:
-    def __init__(self, y_observation, D0: DLM_D0_container, initial_m0_given_D0: np.array, initial_C0_given_D0: np.array):
+    def __init__(self, y_observation, D0: DLM_D0_container, initial_m0_given_D0: np.ndarray, initial_C0_given_D0: np.ndarray):
         self.util_inst = DLM_utility()
         if D0.F_obs_eq_design is None \
                 or D0.G_sys_eq_transition is None \
@@ -347,7 +347,7 @@ class DLM_univariate_y_without_V_in_D0:
     #chapter 4.5 of West
     #conjugate analysis. when V is unknown, y is univariate
     def __init__(self, y_observation, D0_having_F_G_Wst: DLM_D0_container,
-                initial_m0_given_D0: np.array, initial_C0st_given_D0: np.array, n0_given_D0:float, S0_given_D0:float):
+                initial_m0_given_D0: np.ndarray, initial_C0st_given_D0: np.ndarray, n0_given_D0:float, S0_given_D0:float):
                 #D0 should have F,G,Wst
 
         if D0_having_F_G_Wst.F_obs_eq_design is None \
@@ -629,7 +629,94 @@ class DLM_univariate_y_without_V_in_D0_with_reference_prior(DLM_univariate_y_wit
             raise AttributeError("t of Dt should be in the range of proper posteriors")
         return super().run_forecast_analysis(t_of_given_Dt, K_end_step)
 
+class DLM_univariate_y_without_V_W_in_D0(DLM_univariate_y_without_V_in_D0): #need to test!!
+    def __init__(self, y_observation, 
+                D0_having_F_G: DLM_D0_container,
+                initial_m0_given_D0: np.ndarray, 
+                initial_C0st_given_D0: np.ndarray, 
+                n0_given_D0: float, 
+                S0_given_D0: float,
+                discount_factor_for_Wst: float):
+                #D0 should have F,G
 
+        if D0_having_F_G.F_obs_eq_design is None \
+            or D0_having_F_G.G_sys_eq_transition is None:
+            raise ValueError("specify all F and G in the D0")
+
+        self.util_inst = DLM_utility()
+
+        self.y_observation = self.util_inst.vectorize_seq(y_observation)
+        self.y_len = len(y_observation)
+        self.D0 = D0_having_F_G
+        self.m0 = initial_m0_given_D0
+        self.C0st = initial_C0st_given_D0
+        self.n0 = n0_given_D0
+        self.S0 = S0_given_D0
+        self.delta_Wst = discount_factor_for_Wst
+
+        #result containers
+        self.m_posterior_mean = [initial_m0_given_D0]
+        self.Cst_posterior_var = [initial_C0st_given_D0]
+        self.C_posterior_scale = [S0_given_D0*initial_C0st_given_D0]
+        self.a_prior_mean = []
+        self.Rst_prior_var = []
+        self.R_prior_scale = []
+        self.f_one_step_forecast_mean = []
+        self.Qst_one_step_forecast_var = []
+        self.Q_one_step_forecast_scale = []
+        self.A_new_info_scaler = []
+        self.n_precision_shape = [n0_given_D0] #shape: {n_t}/2 at t
+        self.S_precision_rate = [S0_given_D0] #rate: {n_t}{S_t}/2 at t
+        self.ra_reversed_retrospective_a = []
+        self.rR_reversed_retrospective_R = []
+        self.fa_forecast_state_mean_a = []
+        self.fR_forecast_state_scale_R = []
+        self.ff_forecast_obs_mean_f = []
+        self.fQ_forecast_obs_scale_Q = []
+
+    def _one_iter(self, t):
+        #conditional on V
+        ##prior
+        Gt = self.D0.G_sys_eq_transition[t-1]
+        at = Gt @ self.m_posterior_mean[-1]
+        Pst = Gt @ self.Cst_posterior_var[-1] @ np.transpose(Gt)
+        Rst_t = Pst/self.delta_Wst
+        applied_Wst = Pst*(1-self.delta_Wst)/self.delta_Wst
+        self.D0.Wst_sys_eq_scale_free_covariance.append(applied_Wst) #save for forecasting
+
+        ##one_step_forecast
+        Ft = self.D0.F_obs_eq_design[t-1]
+        ft = np.transpose(Ft) @ at
+        Qst_t = 1 + np.transpose(Ft) @ Rst_t @ Ft
+        ##posterior
+        et = self.y_observation[t-1] - ft
+        At = Rst_t @ Ft @ np.linalg.inv(Qst_t)
+        mt = at + At @ et
+        Cst_t = Rst_t - At @ Qst_t @ np.transpose(At)
+
+        #precision
+        nt = self.n_precision_shape[-1] + 1
+        S_t1 = self.S_precision_rate[-1]
+        St = float(S_t1*(nt-1)/nt + et @ et / (nt * Qst_t))
+
+        #unconditional on V
+        Ct = St * Cst_t
+        Rt = S_t1 * Rst_t
+        Qt = S_t1 * Qst_t
+        
+        #save
+        self.m_posterior_mean.append(mt)
+        self.Cst_posterior_var.append(Cst_t)
+        self.C_posterior_scale.append(Ct)
+        self.a_prior_mean.append(at)
+        self.Rst_prior_var.append(Rst_t)
+        self.R_prior_scale.append(Rt)
+        self.f_one_step_forecast_mean.append(ft)
+        self.Qst_one_step_forecast_var.append(Qst_t)
+        self.Q_one_step_forecast_scale.append(Qt)
+        self.A_new_info_scaler.append(At)
+        self.n_precision_shape.append(nt)
+        self.S_precision_rate.append(St)
 
 if __name__=="__main__":
     import matplotlib.pyplot as plt
