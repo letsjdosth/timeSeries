@@ -395,6 +395,7 @@ class DLM_univariate_y_without_V_in_D0:
         Ft = self.D0.F_obs_eq_design[t-1]
         ft = np.transpose(Ft) @ at
         Qst_t = 1 + np.transpose(Ft) @ Rst_t @ Ft
+
         ##posterior
         et = self.y_observation[t-1] - ft
         At = Rst_t @ Ft @ np.linalg.inv(Qst_t)
@@ -654,6 +655,9 @@ class DLM_univariate_y_without_V_W_in_D0(DLM_univariate_y_without_V_in_D0): #nee
         self.S0 = S0_given_D0
         self.delta_Wst = discount_factor_for_Wst
 
+        #manipulate D0 (structurally it is bad...)
+        self.D0.Wst_sys_eq_scale_free_covariance = []
+
         #result containers
         self.m_posterior_mean = [initial_m0_given_D0]
         self.Cst_posterior_var = [initial_C0st_given_D0]
@@ -688,6 +692,7 @@ class DLM_univariate_y_without_V_W_in_D0(DLM_univariate_y_without_V_in_D0): #nee
         Ft = self.D0.F_obs_eq_design[t-1]
         ft = np.transpose(Ft) @ at
         Qst_t = 1 + np.transpose(Ft) @ Rst_t @ Ft
+
         ##posterior
         et = self.y_observation[t-1] - ft
         At = Rst_t @ Ft @ np.linalg.inv(Qst_t)
@@ -718,10 +723,49 @@ class DLM_univariate_y_without_V_W_in_D0(DLM_univariate_y_without_V_in_D0): #nee
         self.n_precision_shape.append(nt)
         self.S_precision_rate.append(St)
 
+    def _forecast_one_iter(self, t_k, t_of_given_Dt):
+        G_t_k = self.D0.G_sys_eq_transition[t_k-1]
+        a_t_k = G_t_k @ self.fa_forecast_state_mean_a[-1]
+
+        if t_k > self.y_len: #extrapolation over y_len
+            G_t_1 = self.D0.G_sys_eq_transition[t_of_given_Dt]
+            Pst_1 = G_t_1 @ self.Cst_posterior_var[-1] @ np.transpose(G_t_1)
+            R_t_k = G_t_k @ self.fR_forecast_state_scale_R[-1] @ np.transpose(G_t_k) + Pst_1*(1-self.delta_Wst)/self.delta_Wst #modified by chap6.3
+
+            F_t_k = self.D0.F_obs_eq_design[t_k-1]
+            f_t_k = np.transpose(F_t_k) @ a_t_k
+            Q_t_k = np.transpose(F_t_k) @ R_t_k @ F_t_k + self.S_precision_rate[t_of_given_Dt-1] #modified
+            # print(F_t_k, R_t_k, self.S_precision_rate[t_of_given_Dt-1])
+            # print(np.transpose(F_t_k) @ R_t_k @ F_t_k)
+
+        else:
+            R_t_k = G_t_k @ self.fR_forecast_state_scale_R[-1] @ np.transpose(G_t_k) + self.D0.Wst_sys_eq_scale_free_covariance[t_k-1]
+        
+            F_t_k = self.D0.F_obs_eq_design[t_k-1]
+            f_t_k = np.transpose(F_t_k) @ a_t_k
+            Q_t_k = np.transpose(F_t_k) @ R_t_k @ F_t_k + self.S_precision_rate[t_k-1]
+
+        self.fa_forecast_state_mean_a.append(a_t_k)
+        self.fR_forecast_state_scale_R.append(R_t_k)
+        self.ff_forecast_obs_mean_f.append(f_t_k)
+        self.fQ_forecast_obs_scale_Q.append(Q_t_k)
+        
+    def run_forecast_analysis(self, t_of_given_Dt, K_end_step):
+        t = t_of_given_Dt
+        self.fa_forecast_state_mean_a = [self.m_posterior_mean[t-1]]
+        self.fR_forecast_state_scale_R = [self.C_posterior_scale[t-1]]
+
+        for t_k in range(t_of_given_Dt + 1, K_end_step + 1):
+            self._forecast_one_iter(t_k, t_of_given_Dt)
+
+        self.fa_forecast_state_mean_a = self.fa_forecast_state_mean_a[1:]
+        self.fR_forecast_state_scale_R = self.fR_forecast_state_scale_R[1:]
+
+
 if __name__=="__main__":
     import matplotlib.pyplot as plt
-    test1 = True
-    test2 = False
+    test1 = False
+    test2 = True
     test3 = False
     test4 = False
     #caution: x axis starts 0 but it means t=1 (because python index starts at 0)
@@ -744,7 +788,7 @@ if __name__=="__main__":
         test1_sim_inst.simulate_data(np.array([0]), np.array([[1]]))
         test1_theta_seq, test1_y_seq = test1_sim_inst.get_theta_y()
         # print(test1_theta_seq)
-        # print(test1_y_seq)
+        print(test1_y_seq)
 
         plt.plot(range(100), test1_theta_seq)
         plt.scatter(range(100), test1_y_seq, s=10) #blue dot: obs
