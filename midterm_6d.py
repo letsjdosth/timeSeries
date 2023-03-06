@@ -1,11 +1,9 @@
-from random import seed, normalvariate
 import csv
 
 import numpy as np
 import scipy.stats as scss
 import matplotlib.pyplot as plt
 
-from ts_util.time_series_utils import difference_oper
 from pyBayes.DLM_Core import DLM_univariate_y_without_V_W_in_D0, DLM_D0_container
 
 
@@ -101,8 +99,8 @@ if __name__=="__main__":
     plt.plot(range(data_T), [m[1] for m in posterior_mt], color="orange") #orange: posterior E(theta_t|D_t)
     cred_interval_upper = [m[1] + t*np.sqrt(c[1][1]) for m, c, t in zip(posterior_mt, posterior_ct, t95)]
     cred_interval_lower = [m[1] - t*np.sqrt(c[1][1]) for m, c, t in zip(posterior_mt, posterior_ct, t95)]
-    plt.plot(range(data_T), cred_interval_upper, color="grey") #posterior (\theta_t|D_{t}) 90% credible interval
-    plt.plot(range(data_T), cred_interval_lower, color="grey") #posterior (\theta_t|D_{t}) 90% credible interval
+    plt.plot(range(data_T), cred_interval_upper, color="grey") #posterior (\theta_t|D_{t}) 95% credible interval
+    plt.plot(range(data_T), cred_interval_lower, color="grey") #posterior (\theta_t|D_{t}) 95% credible interval
     plt.show()
 
     # smoothing
@@ -112,8 +110,8 @@ if __name__=="__main__":
     plt.plot(range(data_T), [a[0] for a in retro_a_at_T], color="red")
     cred_interval_upper = [a[0] + z95*np.sqrt(r[0][0]) for a, r in zip(retro_a_at_T, retro_R_at_T)]
     cred_interval_lower = [a[0] - z95*np.sqrt(r[0][0]) for a, r in zip(retro_a_at_T, retro_R_at_T)]
-    plt.plot(range(data_T), cred_interval_upper, color="grey") #posterior (\theta_t|D_{t}) 90% credible interval
-    plt.plot(range(data_T), cred_interval_lower, color="grey") #posterior (\theta_t|D_{t}) 90% credible interval
+    plt.plot(range(data_T), cred_interval_upper, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
+    plt.plot(range(data_T), cred_interval_lower, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
     plt.show()
 
 
@@ -121,8 +119,8 @@ if __name__=="__main__":
     plt.plot(range(data_T), [a[1] for a in retro_a_at_T], color="red")
     cred_interval_upper = [a[1] + z95*np.sqrt(r[1][1]) for a, r in zip(retro_a_at_T, retro_R_at_T)]
     cred_interval_lower = [a[1] - z95*np.sqrt(r[1][1]) for a, r in zip(retro_a_at_T, retro_R_at_T)]
-    plt.plot(range(data_T), cred_interval_upper, color="grey") #posterior (\theta_t|D_{t}) 90% credible interval
-    plt.plot(range(data_T), cred_interval_lower, color="grey") #posterior (\theta_t|D_{t}) 90% credible interval
+    plt.plot(range(data_T), cred_interval_upper, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
+    plt.plot(range(data_T), cred_interval_lower, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
     plt.show()
 
     #comparison
@@ -149,7 +147,20 @@ if __name__=="__main__":
     cred_interval_lower = [m[0] - t*np.sqrt(c[0][0]) for m, c, t in zip(posterior_mt, posterior_ct, t95)]
     plt.plot(range(data_T), cred_interval_upper, color="grey") #posterior (\theta_t|D_{t}) 90% credible interval
     plt.plot(range(data_T), cred_interval_lower, color="grey") #posterior (\theta_t|D_{t}) 90% credible interval
-    plt.plot(range(data_T, data_T+5), [f[0] for f in fo_mean], color="green") #orange: posterior E(theta_t|D_t), filtering
+    plt.plot(range(data_T), [a[0] for a in retro_a_at_T], color="red")
+    cred_interval_upper = [a[0] + z95*np.sqrt(r[0][0]) for a, r in zip(retro_a_at_T, retro_R_at_T)]
+    cred_interval_lower = [a[0] - z95*np.sqrt(r[0][0]) for a, r in zip(retro_a_at_T, retro_R_at_T)]
+    plt.plot(range(data_T), cred_interval_upper, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
+    plt.plot(range(data_T), cred_interval_lower, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
+    
+    plt.plot(range(data_T, data_T+5), [f[0] for f in fo_mean], color="green") #green: 5-step ahead prediction
     plt.plot(range(data_T, data_T+5), [f[0]+z95*np.sqrt(q[0][0]) for f, q in zip(fo_mean, fo_q)], color="grey")
     plt.plot(range(data_T, data_T+5), [f[0]-z95*np.sqrt(q[0][0]) for f, q in zip(fo_mean, fo_q)], color="grey")
     plt.show()
+
+    
+    pred_cred_interval_upper = [f[0]+z95*np.sqrt(q[0][0]) for f, q in zip(fo_mean, fo_q)]
+    pred_cred_interval_lower = [f[0]-z95*np.sqrt(q[0][0]) for f, q in zip(fo_mean, fo_q)]
+    for i in range(5):
+        print(str(i+1)+" step ahead, ", "mean:", round(fo_mean[i][0][0],3), " variance:", round(fo_q[i][0][0],3), 
+            " 95% CI:(", round(pred_cred_interval_lower[i][0],3),",",round(pred_cred_interval_upper[i][0],3),")")

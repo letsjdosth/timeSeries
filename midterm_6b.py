@@ -1,5 +1,4 @@
-import math
-from random import seed, normalvariate
+from random import seed
 import csv
 
 import numpy as np

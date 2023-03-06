@@ -1,13 +1,10 @@
-import math
-from random import seed, normalvariate
+from random import seed
 import csv
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ts_util.arma_spectral_density import ARMA
 from ts_util.least_squares import OLS_by_QR, sym_defpos_matrix_inversion_cholesky
-from ts_util.time_series_utils import ar_polynomial_roots
 
 from pyBayes.rv_gen_gamma import Sampler_univariate_InvGamma
 from pyBayes.MCMC_Core import MCMC_Diag
