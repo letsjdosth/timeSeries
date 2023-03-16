@@ -4,7 +4,7 @@ import numpy as np
 import scipy.stats as scss
 import matplotlib.pyplot as plt
 
-from pyBayes.DLM_Core import DLM_univariate_y_without_V_W_in_D0, DLM_D0_container
+from pyBayes.DLM_Core import DLM_univariate_y_without_V_W_in_D0, DLM_model_container
 
 
 data_yt = []
@@ -21,31 +21,31 @@ with open('dataset/zt_223_midterm.csv', newline='\n') as csvfile:
 data_T = len(data_yt) #400
 
 if __name__=="__main__":
-    dlm_d0_inst = DLM_D0_container(data_T+5)
+    dlm_d0_inst = DLM_model_container(data_T+5)
     dlm_d0_inst.set_F_const_design_mat(np.array([[1],[0]]))
     dlm_d0_inst.set_G_const_transition_mat(np.array([[1,1],
                                                     [0,1]]))
     dlm_d0_inst.set_u_no_covariate()
 
     # choosing delta
-    # for delta in np.linspace(0.7, 1, num=31, endpoint=True):
-    #     dlm_fit_inst = DLM_univariate_y_without_V_W_in_D0(
-    #         data_yt,
-    #         dlm_d0_inst,
-    #         np.array([[0],[0]]),
-    #         np.array([[1,0],
-    #                 [0,1]]),
-    #         0.01,
-    #         1,
-    #         discount_factor_for_Wst=delta
-    #     )
-    #     dlm_fit_inst.run()
+    for delta in np.linspace(0.1, 1, num=100, endpoint=True):
+        dlm_fit_inst = DLM_univariate_y_without_V_W_in_D0(
+            data_yt,
+            dlm_d0_inst,
+            np.array([[0],[0]]),
+            np.array([[1,0],
+                    [0,1]]),
+            0.01,
+            1,
+            discount_factor_for_Wst=delta
+        )
+        dlm_fit_inst.run()
         
-    #     posterior_mt, posterior_ct = dlm_fit_inst.get_posterior_m_C()
-    #     forecast_f, forecast_Q = dlm_fit_inst.get_one_step_forecast_f_Q()
+        posterior_mt, posterior_ct = dlm_fit_inst.get_posterior_m_C()
+        forecast_f, forecast_Q = dlm_fit_inst.get_one_step_forecast_f_Q()
         
-    #     mse_onestep_f = np.sum([(f-y)**2 + float(q[0][0]) for y, f, q in zip(data_yt, forecast_f, forecast_Q)])/data_T
-    #     print("delta:", delta, " mse:", mse_onestep_f)
+        mse_onestep_f = np.sum([(f-y)**2 for y, f, q in zip(data_yt, forecast_f, forecast_Q)])/data_T
+        print("delta:", delta, " mse:", mse_onestep_f)
 
     dlm_fit_inst = DLM_univariate_y_without_V_W_in_D0(
         data_yt,
@@ -55,7 +55,7 @@ if __name__=="__main__":
                 [0,1]]),
         1,
         1,
-        discount_factor_for_Wst=0.92
+        discount_factor_for_Wst=0.127
     )
     dlm_fit_inst.run()
     
