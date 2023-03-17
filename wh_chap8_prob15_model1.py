@@ -65,31 +65,31 @@ z95 = 1.959964
 t95 = [scss.t.ppf([0.025, 0.975], df=d)[0] for d in model1_fit_inst.n_precision_shape] # len: 400
 
 # one step forecast
-plt.scatter(range(data_T), [y[0] for y in data_yt], s=10) #blue dot: obs
-plt.plot(range(data_T), [f[0] for f in forecast_f], color="green") #green: one-step forecast E(Y_t|D_{t-1})
+plt.scatter(range(1, data_T+1), [y[0] for y in data_yt], s=10) #blue dot: obs
+plt.plot(range(1, data_T+1), [f[0] for f in forecast_f], color="green") #green: one-step forecast E(Y_t|D_{t-1})
 cred_interval_upper = [f[0] + t*np.sqrt(q[0][0]) for f, q, t in zip(forecast_f, forecast_Q, t95)]
 cred_interval_lower = [f[0] - t*np.sqrt(q[0][0]) for f, q, t in zip(forecast_f, forecast_Q, t95)]
-plt.plot(range(data_T), cred_interval_upper, color="grey") #one-step forecast (Y_t|D_{t-1}) 95% credible interval
-plt.plot(range(data_T), cred_interval_lower, color="grey") #one-step forecast (Y_t|D_{t-1}) 95% credible interval
+plt.plot(range(1, data_T+1), cred_interval_upper, color="grey") #one-step forecast (Y_t|D_{t-1}) 95% credible interval
+plt.plot(range(1, data_T+1), cred_interval_lower, color="grey") #one-step forecast (Y_t|D_{t-1}) 95% credible interval
 plt.show()
 
 
 # filtering - theta1
-plt.scatter(range(data_T), [y[0] for y in data_yt], s=10) #blue dot: obs
-plt.plot(range(data_T), [m[0] for m in posterior_mt], color="orange") #orange: posterior E(theta_t|D_t)
+plt.scatter(range(1, data_T+1), [y[0] for y in data_yt], s=10) #blue dot: obs
+plt.plot(range(1, data_T+1), [m[0] for m in posterior_mt], color="orange") #orange: posterior E(theta_t|D_t)
 cred_interval_upper = [m[0] + t*np.sqrt(c[0][0]) for m, c, t in zip(posterior_mt, posterior_ct, t95)]
 cred_interval_lower = [m[0] - t*np.sqrt(c[0][0]) for m, c, t in zip(posterior_mt, posterior_ct, t95)]
-plt.plot(range(data_T), cred_interval_upper, color="grey") #posterior (\theta_t|D_{t}) 95% credible interval
-plt.plot(range(data_T), cred_interval_lower, color="grey") #posterior (\theta_t|D_{t}) 95% credible interval
+plt.plot(range(1, data_T+1), cred_interval_upper, color="grey") #posterior (\theta_t|D_{t}) 95% credible interval
+plt.plot(range(1, data_T+1), cred_interval_lower, color="grey") #posterior (\theta_t|D_{t}) 95% credible interval
 plt.show()
 
 # filtering - theta3
-plt.scatter(range(data_T), [y[0] for y in data_yt], s=10) #blue dot: obs diff
-plt.plot(range(data_T), [m[2] for m in posterior_mt], color="orange") #orange: posterior E(theta_t|D_t)
+plt.scatter(range(1, data_T+1), [y[0] for y in data_yt], s=10) #blue dot: obs diff
+plt.plot(range(1, data_T+1), [m[2] for m in posterior_mt], color="orange") #orange: posterior E(theta_t|D_t)
 cred_interval_upper = [m[2] + t*np.sqrt(c[2][2]) for m, c, t in zip(posterior_mt, posterior_ct, t95)]
 cred_interval_lower = [m[2] - t*np.sqrt(c[2][2]) for m, c, t in zip(posterior_mt, posterior_ct, t95)]
-plt.plot(range(data_T), cred_interval_upper, color="grey") #posterior (\theta_t|D_{t}) 95% credible interval
-plt.plot(range(data_T), cred_interval_lower, color="grey") #posterior (\theta_t|D_{t}) 95% credible interval
+plt.plot(range(1, data_T+1), cred_interval_upper, color="grey") #posterior (\theta_t|D_{t}) 95% credible interval
+plt.plot(range(1, data_T+1), cred_interval_lower, color="grey") #posterior (\theta_t|D_{t}) 95% credible interval
 plt.show()
 
 # smoothing
@@ -97,33 +97,33 @@ model1_fit_inst.run_retrospective_analysis()
 retro_a_at_T, retro_R_at_T = model1_fit_inst.get_retrospective_a_R()
 
 
-plt.scatter(range(data_T), [y[0] for y in data_yt], s=10) #blue dot: obs
-plt.plot(range(data_T), [a[0] for a in retro_a_at_T], color="red")
+plt.scatter(range(1, data_T+1), [y[0] for y in data_yt], s=10) #blue dot: obs
+plt.plot(range(1, data_T+1), [a[0] for a in retro_a_at_T], color="red")
 cred_interval_upper = [a[0] + z95*np.sqrt(r[0][0]) for a, r in zip(retro_a_at_T, retro_R_at_T)]
 cred_interval_lower = [a[0] - z95*np.sqrt(r[0][0]) for a, r in zip(retro_a_at_T, retro_R_at_T)]
-plt.plot(range(data_T), cred_interval_upper, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
-plt.plot(range(data_T), cred_interval_lower, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
+plt.plot(range(1, data_T+1), cred_interval_upper, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
+plt.plot(range(1, data_T+1), cred_interval_lower, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
 plt.show()
 
 
-plt.scatter(range(data_T), [y[0] for y in data_yt], s=10) #blue dot: obs diff
-plt.plot(range(data_T), [a[2] for a in retro_a_at_T], color="red")
+plt.scatter(range(1, data_T+1), [y[0] for y in data_yt], s=10) #blue dot: obs diff
+plt.plot(range(1, data_T+1), [a[2] for a in retro_a_at_T], color="red")
 cred_interval_upper = [a[2] + z95*np.sqrt(r[2][2]) for a, r in zip(retro_a_at_T, retro_R_at_T)]
 cred_interval_lower = [a[2] - z95*np.sqrt(r[2][2]) for a, r in zip(retro_a_at_T, retro_R_at_T)]
-plt.plot(range(data_T), cred_interval_upper, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
-plt.plot(range(data_T), cred_interval_lower, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
+plt.plot(range(1, data_T+1), cred_interval_upper, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
+plt.plot(range(1, data_T+1), cred_interval_lower, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
 plt.show()
 
 #comparison
 
-plt.scatter(range(data_T), [y[0] for y in data_yt], s=10) #blue dot: obs
-plt.plot(range(data_T), [m[0] for m in posterior_mt], color="orange") #orange: posterior E(theta_t|D_t), filtering
-plt.plot(range(data_T), [a[0] for a in retro_a_at_T], color="red") #red: smoothing, E(theta_t|D_T)
+plt.scatter(range(1, data_T+1), [y[0] for y in data_yt], s=10) #blue dot: obs
+plt.plot(range(1, data_T+1), [m[0] for m in posterior_mt], color="orange") #orange: posterior E(theta_t|D_t), filtering
+plt.plot(range(1, data_T+1), [a[0] for a in retro_a_at_T], color="red") #red: smoothing, E(theta_t|D_T)
 plt.show()
 
-plt.scatter(range(data_T), [y[0] for y in data_yt], s=10) #blue dot: obs diff
-plt.plot(range(data_T), [m[2] for m in posterior_mt], color="orange") #orange: posterior E(theta_t|D_t), filtering
-plt.plot(range(data_T), [a[2] for a in retro_a_at_T], color="red") #red: smoothing, E(theta_t|D_T)
+plt.scatter(range(1, data_T+1), [y[0] for y in data_yt], s=10) #blue dot: obs diff
+plt.plot(range(1, data_T+1), [m[2] for m in posterior_mt], color="orange") #orange: posterior E(theta_t|D_t), filtering
+plt.plot(range(1, data_T+1), [a[2] for a in retro_a_at_T], color="red") #red: smoothing, E(theta_t|D_T)
 plt.show()
 
 
@@ -133,16 +133,16 @@ model1_fit_inst.run_forecast_analysis(data_T, data_T+forecast_step)
 fo_mean, fo_q = model1_fit_inst.get_forecast_f_Q()
 
 
-plt.scatter(range(data_T), [y[0] for y in data_yt], s=10) #blue dot: obs
-plt.plot(range(data_T), [f[0] for f in forecast_f], color="green") #green: one-step forecast E(Y_t|D_{t-1})
+plt.scatter(range(1, data_T+1), [y[0] for y in data_yt], s=10) #blue dot: obs
+plt.plot(range(1, data_T+1), [f[0] for f in forecast_f], color="green") #green: one-step forecast E(Y_t|D_{t-1})
 cred_interval_upper = [f[0] + t*np.sqrt(q[0][0]) for f, q, t in zip(forecast_f, forecast_Q, t95)]
 cred_interval_lower = [f[0] - t*np.sqrt(q[0][0]) for f, q, t in zip(forecast_f, forecast_Q, t95)]
-plt.plot(range(data_T), cred_interval_upper, color="grey") #one-step forecast (Y_t|D_{t-1}) 95% credible interval
-plt.plot(range(data_T), cred_interval_lower, color="grey") #one-step forecast (Y_t|D_{t-1}) 95% credible interval
+plt.plot(range(1, data_T+1), cred_interval_upper, color="grey") #one-step forecast (Y_t|D_{t-1}) 95% credible interval
+plt.plot(range(1, data_T+1), cred_interval_lower, color="grey") #one-step forecast (Y_t|D_{t-1}) 95% credible interval
 
-plt.plot(range(data_T, data_T+forecast_step), [f[0] for f in fo_mean], color="green") #green: 5-step ahead prediction
-plt.plot(range(data_T, data_T+forecast_step), [f[0]+z95*np.sqrt(q[0][0]) for f, q in zip(fo_mean, fo_q)], color="grey")
-plt.plot(range(data_T, data_T+forecast_step), [f[0]-z95*np.sqrt(q[0][0]) for f, q in zip(fo_mean, fo_q)], color="grey")
+plt.plot(range(data_T+1, data_T+forecast_step+1), [f[0] for f in fo_mean], color="green") #green: 5-step ahead prediction
+plt.plot(range(data_T+1, data_T+forecast_step+1), [f[0]+z95*np.sqrt(q[0][0]) for f, q in zip(fo_mean, fo_q)], color="grey")
+plt.plot(range(data_T+1, data_T+forecast_step+1), [f[0]-z95*np.sqrt(q[0][0]) for f, q in zip(fo_mean, fo_q)], color="grey")
 plt.show()
 
 
