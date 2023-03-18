@@ -1,6 +1,8 @@
 from random import seed
 
 import numpy as np
+import scipy.stats as scss
+import matplotlib.pyplot as plt
 
 class DLM_utility:
     def vectorize_seq(self, seq):
@@ -398,6 +400,10 @@ class DLM_univariate_y_without_V_in_D0:
         self.fR_forecast_state_scale_R = []
         self.ff_forecast_obs_mean_f = []
         self.fQ_forecast_obs_scale_Q = []
+        self.t_smoothing_given_Dt = None
+        self.t_forecasting_given_Dt = None
+        self.K_forecasting_given_Dt = None
+
 
     def _one_iter(self, t):
         #conditional on V
@@ -472,6 +478,7 @@ class DLM_univariate_y_without_V_in_D0:
             t = self.y_len
         else:
             t = t_of_given_Dt
+        self.t_smoothing_given_Dt = t
         
         self.ra_reversed_retrospective_a = [self.m_posterior_mean[t-1]]
         self.rR_reversed_retrospective_R = [self.C_posterior_scale[t-1]]
@@ -498,6 +505,9 @@ class DLM_univariate_y_without_V_in_D0:
         t = t_of_given_Dt
         self.fa_forecast_state_mean_a = [self.m_posterior_mean[t-1]]
         self.fR_forecast_state_scale_R = [self.C_posterior_scale[t-1]]
+        self.t_forecasting_given_Dt = t_of_given_Dt
+        self.K_forecasting_given_Dt = K_end_step
+
 
         for t_k in range(t_of_given_Dt + 1, K_end_step + 1):
             self._forecast_one_iter(t_k)
@@ -785,6 +795,8 @@ class DLM_univariate_y_without_V_W_in_D0(DLM_univariate_y_without_V_in_D0):
         t = t_of_given_Dt
         self.fa_forecast_state_mean_a = [self.m_posterior_mean[t-1]]
         self.fR_forecast_state_scale_R = [self.C_posterior_scale[t-1]]
+        self.t_forecasting_given_Dt = t_of_given_Dt
+        self.K_forecasting_given_Dt = K_end_step
 
         for t_k in range(t_of_given_Dt + 1, K_end_step + 1):
             self._forecast_one_iter(t_k, t_of_given_Dt)
@@ -831,6 +843,147 @@ class DLM_univariate_y_without_V_W_in_D0_with_component_discount_factor(DLM_univ
             applied_Wst[start:end, start:end] = block_Pst * (1-delta)/delta
         
         return Rst_t, applied_Wst
+
+
+class DLM_visualizer_using_t_dist:
+    def __init__(self, dlm_inst: DLM_univariate_y_without_V_in_D0, cred):
+        self.dlm_inst = dlm_inst
+        self.cred = cred
+
+        # ===
+        self.theta_len = len(self.dlm_inst.m0)
+        self.y_len = self.dlm_inst.y_len
+        self.y = self.dlm_inst.y_observation
+        self.t_q = [scss.t.ppf([1-(1-cred)], df=d)[0] for d in self.dlm_inst.n_precision_shape]
+        self.z_q = scss.norm.ppf([1-(1-cred)/2])[0]
+
+        # ===
+        self.variable_names = ["param"+str(i) for i in range(self.theta_len)]
+        self.graphic_use_variable_name = False
+
+    def set_variable_names(self, name_list):
+        self.variable_names = name_list
+        self.graphic_use_variable_name=True
+
+    def show_one_step_forecast(self, obs_dim_idx=0, show=True, title_str="one-step forecasting"):
+        "univariate y_t case: set dim_idx=0"
+        forecast_f, forecast_Q = self.dlm_inst.get_one_step_forecast_f_Q()
+
+        plt.figure(figsize=(10, 5))
+        plt.tight_layout()
+
+        plt.scatter(range(1,self.y_len+1), [y[obs_dim_idx] for y in self.y], s=10) #blue dot: obs
+        plt.plot(range(1,self.y_len+1), [f[obs_dim_idx] for f in forecast_f], color="green") #green: one-step forecast E(Y_t|D_{t-1})
+        cred_interval_upper = [f[obs_dim_idx] + t*np.sqrt(q[obs_dim_idx][obs_dim_idx]) for f, q, t in zip(forecast_f, forecast_Q, self.t_q)]
+        cred_interval_lower = [f[obs_dim_idx] - t*np.sqrt(q[obs_dim_idx][obs_dim_idx]) for f, q, t in zip(forecast_f, forecast_Q, self.t_q)]
+        plt.plot(range(1,self.y_len+1), cred_interval_upper, color="grey") #one-step forecast (Y_t|D_{t-1}) 95% credible interval
+        plt.plot(range(1,self.y_len+1), cred_interval_lower, color="grey") #one-step forecast (Y_t|D_{t-1}) 95% credible interval
+        plt.title(title_str)
+        if show:
+            plt.show()
+
+    def show_filtering_specific_dim(self, param_idx, obs_dim_idx, show=False):
+        posterior_mt, posterior_ct = self.dlm_inst.get_posterior_m_C()
+                
+        plt.scatter(range(1,self.y_len+1), [y[obs_dim_idx] for y in self.y], s=10) #blue dot: obs
+        plt.plot(range(1,self.y_len+1), [m[param_idx] for m in posterior_mt], color="orange") #orange: posterior E(theta_t|D_t)
+        cred_interval_upper = [m[param_idx] + t*np.sqrt(c[param_idx][param_idx]) for m, c, t in zip(posterior_mt, posterior_ct, self.t_q)]
+        cred_interval_lower = [m[param_idx] - t*np.sqrt(c[param_idx][param_idx]) for m, c, t in zip(posterior_mt, posterior_ct, self.t_q)]
+        plt.plot(range(1,self.y_len+1), cred_interval_upper, color="grey") #posterior (\theta_t|D_{t}) 95% credible interval
+        plt.plot(range(1,self.y_len+1), cred_interval_lower, color="grey") #posterior (\theta_t|D_{t}) 95% credible interval
+        plt.ylabel("filtering: "+str(self.variable_names[param_idx]))
+        if show:
+            plt.show()
+
+    def show_filtering(self, figure_grid_dim, choose_param_dims:None|list=None, obs_dim_idxs:None|list=None, show=True):
+        grid_row = figure_grid_dim[0]
+        grid_column= figure_grid_dim[1]
+        if choose_param_dims is None:
+            choose_param_dims = [i for i in range(self.theta_len)]
+        if obs_dim_idxs is None:
+            obs_dim_idxs = [0 for _ in range(len(choose_param_dims))]
+
+        plt.figure(figsize=(6*grid_column, 3*grid_row))
+        
+        # plt.tight_layout(pad=0.5)
+
+        for i, (param_dim, obs_dim) in enumerate(zip(choose_param_dims, obs_dim_idxs)):
+            plt.subplot(grid_row, grid_column, i+1)
+            self.show_filtering_specific_dim(param_dim, obs_dim, show=False)
+        if show:
+            plt.show()
+
+
+    def show_smoothing_specific_dim(self, param_idx, obs_dim_idx, show=False):
+        retro_a_at_T, retro_R_at_T = self.dlm_inst.get_retrospective_a_R()
+        rT = self.dlm_inst.t_smoothing_given_Dt
+
+        plt.scatter(range(1,self.y_len+1), [y[obs_dim_idx] for y in self.y], s=10) #blue dot: obs
+
+        plt.plot(range(1,rT+1), [a[param_idx] for a in retro_a_at_T], color="red")
+        cred_interval_upper = [a[param_idx] + self.z_q*np.sqrt(r[param_idx][param_idx]) for a, r in zip(retro_a_at_T, retro_R_at_T)]
+        cred_interval_lower = [a[param_idx] - self.z_q*np.sqrt(r[param_idx][param_idx]) for a, r in zip(retro_a_at_T, retro_R_at_T)]
+        plt.plot(range(1,rT+1), cred_interval_upper, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
+        plt.plot(range(1,rT+1), cred_interval_lower, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
+        plt.ylabel("smoothing: "+str(self.variable_names[param_idx]))
+        if show:
+            plt.show()
+
+    def show_smoothing(self, figure_grid_dim, choose_param_dims:None|list=None, obs_dim_idxs:None|list=None, show=True):
+        grid_row = figure_grid_dim[0]
+        grid_column= figure_grid_dim[1]
+        if choose_param_dims is None:
+            choose_param_dims = [i for i in range(self.theta_len)]
+        if obs_dim_idxs is None:
+            obs_dim_idxs = [0 for _ in range(len(choose_param_dims))]
+
+        plt.figure(figsize=(6*grid_column, 3*grid_row))
+        
+        # plt.tight_layout(pad=0.5)
+
+        for i, (param_dim, obs_dim) in enumerate(zip(choose_param_dims, obs_dim_idxs)):
+            plt.subplot(grid_row, grid_column, i+1)
+            self.show_smoothing_specific_dim(param_dim, obs_dim, show=False)
+        if show:
+            plt.show()
+
+    def show_added_smoothing(self, obs_dim_idx=0, show=True, title_str="smoothing"):
+        retro_a_at_T, retro_R_at_T = self.dlm_inst.get_retrospective_a_R()
+        rT = self.dlm_inst.t_smoothing_given_Dt
+
+        sum_retro_a = [np.sum(at) for at in retro_a_at_T]
+        sum_retro_R = [np.sum(Rt) for Rt in retro_R_at_T]
+        
+        plt.figure(figsize=(10, 5))
+        plt.tight_layout()
+
+        plt.scatter(range(1,self.y_len+1), [y[obs_dim_idx] for y in self.y], s=10) #blue dot: obs
+        plt.plot(range(1,rT+1), [a for a in sum_retro_a], color="red")
+        cred_interval_upper = [a + self.z_q*np.sqrt(r) for a, r in zip(sum_retro_a, sum_retro_R)]
+        cred_interval_lower = [a - self.z_q*np.sqrt(r) for a, r in zip(sum_retro_a, sum_retro_R)]
+        plt.plot(range(1,rT+1), cred_interval_upper, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
+        plt.plot(range(1,rT+1), cred_interval_lower, color="grey") #posterior (\theta_t|D_{T}) 95% credible interval
+        plt.title(title_str)
+        if show:
+            plt.show()
+
+    def show_forecasting(self, show=True, print_summary=True, print_rounding=3):
+        fo_mean, fo_q = self.dlm_inst.get_forecast_f_Q()
+        
+        ft = self.dlm_inst.t_forecasting_given_Dt
+        fK = self.dlm_inst.K_forecasting_given_Dt
+
+        plt.plot(range(ft+1, fK+1), [f[0] for f in fo_mean], color="green")
+        cred_interval_upper = [f[0]+self.z_q*np.sqrt(q[0][0]) for f, q in zip(fo_mean, fo_q)]
+        cred_interval_lower = [f[0]-self.z_q*np.sqrt(q[0][0]) for f, q in zip(fo_mean, fo_q)]
+        plt.plot(range(ft+1, fK+1), cred_interval_upper, color="grey")
+        plt.plot(range(ft+1, fK+1), cred_interval_lower, color="grey")
+        if print_summary:
+            for i in range(fK-ft):
+                print(str(i+1)+" step ahead, ", "mean:", round(fo_mean[i][0],print_rounding), " variance:", round(fo_q[i][0][0],print_rounding), 
+                    " 95% CI:(", round(cred_interval_lower[i],print_rounding),",",round(cred_interval_upper[i],print_rounding),")")
+        if show:
+            plt.show()
 
 
 if __name__=="__main__":
