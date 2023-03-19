@@ -31,6 +31,19 @@ def ar_polynomial_roots(phi_samples: list[list[float]], reciprocal: bool) -> lis
     
     return ar_poly_polar_roots_at_samples
 
+def autocorr(sequence, maxLag):
+        acf = []
+        y_mean = np.mean(sequence)
+        y = [elem - y_mean  for elem in sequence]
+        n_var = sum([elem**2 for elem in y])
+        for k in range(maxLag+1):
+            N = len(y)-k
+            n_cov_term = 0
+            for i in range(N):
+                n_cov_term += y[i]*y[i+k]
+            acf.append((n_cov_term / n_var)[0])
+        return acf
+        
 if __name__=="__main__":
     test_seq = [1,2,3,4,5,7]
     print(difference_oper(test_seq))

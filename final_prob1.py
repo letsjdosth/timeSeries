@@ -4,7 +4,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pyBayes.DLM_Core import DLM_univariate_y_without_V_W_in_D0_with_component_discount_factor, DLM_model_container, DLM_visualizer_using_t_dist
+from pyBayes.DLM_Core import DLM_univariate_y_without_V_W_in_D0_with_component_discount_factor, DLM_model_container, DLM_visualizer
 
 # ===== loading data & plotting
 data_date = []
@@ -127,7 +127,7 @@ model1a_fit_inst.run_retrospective_analysis()
 forecast_step = 12
 model1a_fit_inst.run_forecast_analysis(data_T_until_feb2020, data_T_until_feb2020+forecast_step)
 
-model1a_vis_inst = DLM_visualizer_using_t_dist(model1a_fit_inst, 0.95)
+model1a_vis_inst = DLM_visualizer(model1a_fit_inst, 0.95, True)
 model1a_vis_inst.set_variable_names(["theta0","theta1","a1","b1","a2","b2"])
 model1a_vis_inst.show_one_step_forecast()
 model1a_vis_inst.show_filtering((2,1), [0,1])
@@ -213,7 +213,7 @@ model1d_fit_inst.run_retrospective_analysis()
 forecast_step = 12
 model1d_fit_inst.run_forecast_analysis(data_T, data_T+forecast_step)
 
-model1d_vis_inst = DLM_visualizer_using_t_dist(model1d_fit_inst, 0.95)
+model1d_vis_inst = DLM_visualizer(model1d_fit_inst, 0.95, True)
 model1d_vis_inst.set_variable_names(["theta0","theta1","a1","b1","a2","b2"])
 model1d_vis_inst.show_one_step_forecast()
 model1d_vis_inst.show_filtering((2,1), [0,1])

@@ -4,19 +4,6 @@ import numpy as np
 import scipy.stats as scss
 import matplotlib.pyplot as plt
 
-class DLM_utility:
-    def vectorize_seq(self, seq):
-        try:
-            seq[0][0]
-        except TypeError:
-            return self._make_vectorize_seq(seq)
-        else:
-            return seq
-
-    def _make_vectorize_seq(self, one_dim_seq: list):
-        return [[x] for x in one_dim_seq]
-
-    #later: add visualization functions here (generalize all plot cases in __main__)
 
 class DLM_model_container:
     # notation: following West(1997)
@@ -37,7 +24,6 @@ class DLM_model_container:
         self.u_covariate = None
         self.u_coeff_obs_eq_seq = None
         self.u_coeff_state_eq_seq = None
-
 
     # == setters: with an input as a sequence ==
     def set_Vt_obs_eq_covariance(self, Vt_seq: list[np.ndarray]):
@@ -90,11 +76,42 @@ class DLM_model_container:
     def set_u_no_covariate(self):
         self.set_u_const_covariate_and_coeff(np.array([0]), np.array([0]), np.array([0]))
 
+
+class DLM_utility:
+    def vectorize_seq(self, seq):
+        try:
+            seq[0][0]
+        except TypeError:
+            return self._make_vectorize_seq(seq)
+        else:
+            return seq
+
+    def _make_vectorize_seq(self, one_dim_seq: list):
+        return [[x] for x in one_dim_seq]
+    
+    def container_checker(self, model_inst: DLM_model_container, check_F:bool, check_G:bool, check_W:bool, check_Wst:bool, check_V:bool):
+        if check_F:
+            if model_inst.F_obs_eq_design is None:
+                raise ValueError("specify Ft")
+        if check_G:
+            if model_inst.G_sys_eq_transition is None:
+                raise ValueError("specify Gt")
+        if check_W:
+            if model_inst.W_sys_eq_covariance is None:
+                raise ValueError("specify Wt")
+        if check_Wst:
+            if model_inst.Wst_sys_eq_scale_free_covariance is None:
+                raise ValueError("specify Wst_t")
+        if check_V:
+            if model_inst.V_obs_eq_covariance is None:
+                raise ValueError("specify Vt")
+
+
 class DLM_simulator:
     def __init__(self, model_inst: DLM_model_container, set_seed=None):
         #you should set F,G,W,V in the model_inst
-        if model_inst.F_obs_eq_design is None or model_inst.G_sys_eq_transition is None or model_inst.W_sys_eq_covariance is None or model_inst.V_obs_eq_covariance is None:
-            raise ValueError("specify all F, G, W, and V in the model_inst")
+        self.util_inst = DLM_utility()
+        self.util_inst.container_checker(model_inst, True, True, True, False, True)
 
         self.DLM_model = model_inst
 
@@ -125,16 +142,9 @@ class DLM_simulator:
 
 
 class DLM_full_model:
-    def _model_checker(self, model_inst: DLM_model_container):
-        if model_inst.F_obs_eq_design is None \
-            or model_inst.G_sys_eq_transition is None \
-            or model_inst.W_sys_eq_covariance is None \
-            or model_inst.V_obs_eq_covariance is None:
-            raise ValueError("specify all F, G, W, and V in the D0")
-    
     def __init__(self, y_observation, model_inst: DLM_model_container, initial_m0_given_D0: np.ndarray, initial_C0_given_D0: np.ndarray):
         self.util_inst = DLM_utility()
-        self._model_checker(model_inst)
+        self.util_inst.container_checker(model_inst, True, True, True, False, True)
 
         #input
         self.y_observation = self.util_inst.vectorize_seq(y_observation)
@@ -153,15 +163,20 @@ class DLM_full_model:
         self.e_one_step_forecast_err = [] #index 0 -> e1 = y1-f1
         self.A_adaptive_vector = [] #index 0 -> A1
 
+        self.t_smoothing_given_Dt = None
         self.ra_reversed_retrospective_a = []
         self.rR_reversed_retrospective_R = []
         self.rB_retrospective_gain_B = []
 
+        self.t_forecasting_given_Dt = None
+        self.K_forecasting_given_Dt = None
         self.fa_forecast_state_mean_a = []
         self.fR_forecast_state_var_R = []
         self.ff_forecast_obs_mean_f = []
         self.fQ_forecast_obs_var_Q = []
 
+        
+        
 
     def _one_iter(self, t):
         # prior
@@ -213,6 +228,7 @@ class DLM_full_model:
         else:
             t = t_of_given_Dt
         
+        self.t_smoothing_given_Dt = t
         self.ra_reversed_retrospective_a = [self.m_posterior_mean[t-1]]
         self.rR_reversed_retrospective_R = [self.C_posterior_var[t-1]]
         
@@ -239,6 +255,8 @@ class DLM_full_model:
         t = t_of_given_Dt
         self.fa_forecast_state_mean_a = [self.m_posterior_mean[t-1]] #m_t=a_t(0)
         self.fR_forecast_state_var_R = [self.C_posterior_var[t-1]] #C_t=R_t(0)
+        self.t_forecasting_given_Dt = t_of_given_Dt
+        self.K_forecasting_given_Dt = K_forecast_end_time
 
         for t_k in range(t_of_given_Dt + 1, K_forecast_end_time + 1):
             self._forecast_one_iter(t_k)
@@ -357,20 +375,138 @@ class DLM_full_model_with_reference_prior(DLM_full_model):
         return super().run_forecast_analysis(t_of_given_Dt, K_end_step)
 
 
+class DLM_without_W_by_discounting(DLM_full_model):
+    def __init__(self, y_observation, 
+                model_inst_having_F_G_V: DLM_model_container,
+                initial_m0_given_D0: np.ndarray,
+                initial_C0_given_D0: np.ndarray,
+                discount_factor_for_W: float):
+
+        self.util_inst = DLM_utility()
+        self.util_inst.container_checker(model_inst_having_F_G_V, True, True, False, False, True)
+
+        self.y_observation = self.util_inst.vectorize_seq(y_observation)
+        self.y_len = len(y_observation)
+        self.DLM_model = model_inst_having_F_G_V
+        self.m0 = initial_m0_given_D0
+        self.C0 = initial_C0_given_D0
+        self.delta_W = discount_factor_for_W
+
+        #manipulate D0 (structurally it is bad...)
+        self.DLM_model.W_sys_eq_covariance = []
+
+        #result containers
+        self.m_posterior_mean = [initial_m0_given_D0] #index 0 -> m0|D0 (initial value will be deleted after self.run())
+        self.C_posterior_var = [initial_C0_given_D0] #index 0 -> C0|D0 (initial value will be deleted after self.run())
+        self.a_prior_mean = [] #index 0 -> a1=E[theta_1|D0]
+        self.R_prior_var = [] #index 0 -> R1=Var(theta_1|D0)
+        self.f_one_step_forecast_mean = [] #index 0 -> f1=E[y1|D0]
+        self.Q_one_step_forecast_var = [] #index 0 -> Q1=Var(y1|D0)
+        self.e_one_step_forecast_err = [] #index 0 -> e1 = y1-f1
+        self.A_adaptive_vector = [] #index 0 -> A1
+        
+        self.t_smoothing_given_Dt = None
+        self.ra_reversed_retrospective_a = []
+        self.rR_reversed_retrospective_R = []
+        self.rB_retrospective_gain_B = []
+
+        self.t_forecasting_given_Dt = None
+        self.K_forecasting_given_Dt = None
+        self.fa_forecast_state_mean_a = []
+        self.fR_forecast_state_var_R = []
+        self.ff_forecast_obs_mean_f = []
+        self.fQ_forecast_obs_var_Q = []
+
+
+    def _make_Rt_Wt_using_discounting_factor(self, Pt): #override here for component-discount model
+        Rst_t = Pt/self.delta_W
+        applied_Wt = Pt*(1-self.delta_W)/self.delta_W
+        return Rst_t, applied_Wt
+        
+    def _one_iter(self, t):
+        # prior
+        Gt = self.DLM_model.G_sys_eq_transition[t-1]
+        at = Gt @ self.m_posterior_mean[-1]
+        Pt = Gt @ self.C_posterior_var[-1] @ np.transpose(Gt)
+        Rt, applied_Wt = self._make_Rt_Wt_using_discounting_factor(Pt)
+        self.DLM_model.W_sys_eq_covariance.append(applied_Wt) #bad
+
+        # one-step forecast
+        Ft = self.DLM_model.F_obs_eq_design[t-1]
+        ft = np.transpose(Ft) @ at #E[y_t|D_{t-1}]
+        Qt = np.transpose(Ft) @ Rt @ Ft + self.DLM_model.V_obs_eq_covariance[t-1]
+
+        # posterior
+        At = Rt @ Ft @ np.linalg.inv(Qt)
+        et = self.y_observation[t-1] - ft
+        mt = at + (At @ et)
+        Ct = Rt - (At @ Qt @ np.transpose(At))
+
+        #save
+        self.m_posterior_mean.append(mt)
+        self.C_posterior_var.append(Ct)
+        self.a_prior_mean.append(at)
+        self.R_prior_var.append(Rt)
+        self.f_one_step_forecast_mean.append(ft)
+        self.Q_one_step_forecast_var.append(Qt)
+        self.A_adaptive_vector.append(At)
+        self.e_one_step_forecast_err.append(et)
+
+
+    def _forecast_one_iter(self, t_k, t_of_given_Dt):
+        G_t_k = self.DLM_model.G_sys_eq_transition[t_k-1]
+        a_t_k = G_t_k @ self.fa_forecast_state_mean_a[-1]
+
+        if t_k > self.y_len: #extrapolation over y_len
+            G_t_1 = self.DLM_model.G_sys_eq_transition[t_of_given_Dt]
+            Pst_1 = G_t_1 @ self.C_posterior_var[-1] @ np.transpose(G_t_1)
+            _, Wt_1 = self._make_Rt_Wt_using_discounting_factor(Pst_1)
+
+            R_t_k = G_t_k @ self.fR_forecast_state_var_R[-1] @ np.transpose(G_t_k) + Wt_1 #modified by chap6.3
+
+            F_t_k = self.DLM_model.F_obs_eq_design[t_k-1]
+            f_t_k = np.transpose(F_t_k) @ a_t_k
+            Q_t_k = np.transpose(F_t_k) @ R_t_k @ F_t_k + self.DLM_model.V_obs_eq_covariance[t_k-1]
+
+        else:
+            R_t_k = G_t_k @ self.fR_forecast_state_var_R[-1] @ np.transpose(G_t_k) + self.DLM_model.W_sys_eq_covariance[t_k-1]
+        
+            F_t_k = self.DLM_model.F_obs_eq_design[t_k-1]
+            f_t_k = np.transpose(F_t_k) @ a_t_k
+            Q_t_k = np.transpose(F_t_k) @ R_t_k @ F_t_k + self.DLM_model.V_obs_eq_covariance[t_k-1]
+
+        self.fa_forecast_state_mean_a.append(a_t_k)
+        self.fR_forecast_state_var_R.append(R_t_k)
+        self.ff_forecast_obs_mean_f.append(f_t_k)
+        self.fQ_forecast_obs_var_Q.append(Q_t_k)
+        
+
+    def run_forecast_analysis(self, t_of_given_Dt, K_forecast_end_time):
+        t = t_of_given_Dt
+        self.fa_forecast_state_mean_a = [self.m_posterior_mean[t-1]]
+        self.fR_forecast_state_var_R = [self.C_posterior_var[t-1]]
+        self.t_forecasting_given_Dt = t_of_given_Dt
+        self.K_forecasting_given_Dt = K_forecast_end_time
+
+        for t_k in range(t_of_given_Dt + 1, K_forecast_end_time + 1):
+            self._forecast_one_iter(t_k, t_of_given_Dt)
+
+        self.fa_forecast_state_mean_a = self.fa_forecast_state_mean_a[1:]
+        self.fR_forecast_state_var_R = self.fR_forecast_state_var_R[1:]
+
+
+
 class DLM_univariate_y_without_V_in_D0:
     #chapter 4.5 of West
     #conjugate analysis. when V is unknown, y is univariate
     def _checker(self, model_inst: DLM_model_container):
-        if model_inst.F_obs_eq_design is None \
-            or model_inst.G_sys_eq_transition is None \
-            or model_inst.Wst_sys_eq_scale_free_covariance is None:
-            raise ValueError("specify all F, G, and Wst in the D0")
+        self.util_inst.container_checker(model_inst, True, True, False, True, False)
 
     def __init__(self, y_observation, model_inst_having_F_G_Wst: DLM_model_container,
                 initial_m0_given_D0: np.ndarray, initial_C0st_given_D0: np.ndarray, n0_given_D0:float, S0_given_D0:float):
                 #D0 should have F,G,Wst
-        self._checker(model_inst_having_F_G_Wst)
         self.util_inst = DLM_utility()
+        self._checker(model_inst_having_F_G_Wst)
 
         self.y_observation = self.util_inst.vectorize_seq(y_observation)
         self.y_len = len(y_observation)
@@ -662,9 +798,7 @@ class DLM_univariate_y_without_V_in_D0_with_reference_prior(DLM_univariate_y_wit
 
 class DLM_univariate_y_without_V_W_in_D0(DLM_univariate_y_without_V_in_D0):
     def _checker(self, model_inst):
-        if model_inst.F_obs_eq_design is None \
-            or model_inst.G_sys_eq_transition is None:
-            raise ValueError("specify all F and G in the D0")
+        self.util_inst.container_checker(model_inst, True, True, False, False, False)
 
     def __init__(self, y_observation, 
                 model_inst_having_F_G: DLM_model_container,
@@ -675,8 +809,8 @@ class DLM_univariate_y_without_V_W_in_D0(DLM_univariate_y_without_V_in_D0):
                 discount_factor_for_Wst: float):
                 #D0 should have F,G
 
-        self._checker(model_inst_having_F_G)
         self.util_inst = DLM_utility()
+        self._checker(model_inst_having_F_G)
 
         self.y_observation = self.util_inst.vectorize_seq(y_observation)
         self.y_len = len(y_observation)
@@ -845,8 +979,8 @@ class DLM_univariate_y_without_V_W_in_D0_with_component_discount_factor(DLM_univ
         return Rst_t, applied_Wst
 
 
-class DLM_visualizer_using_t_dist:
-    def __init__(self, dlm_inst: DLM_univariate_y_without_V_in_D0, cred):
+class DLM_visualizer:
+    def __init__(self, dlm_inst: DLM_univariate_y_without_V_in_D0, cred: float, is_used_t_dist: bool):
         self.dlm_inst = dlm_inst
         self.cred = cred
 
@@ -854,8 +988,12 @@ class DLM_visualizer_using_t_dist:
         self.theta_len = len(self.dlm_inst.m0)
         self.y_len = self.dlm_inst.y_len
         self.y = self.dlm_inst.y_observation
-        self.t_q = [scss.t.ppf([1-(1-cred)], df=d)[0] for d in self.dlm_inst.n_precision_shape]
         self.z_q = scss.norm.ppf([1-(1-cred)/2])[0]
+        if is_used_t_dist:
+            self.t_q = [scss.t.ppf([1-(1-cred)], df=d)[0] for d in self.dlm_inst.n_precision_shape]
+        else:
+            self.t_q = [self.z_q for _ in range(self.y_len)]
+        
 
         # ===
         self.variable_names = ["param"+str(i) for i in range(self.theta_len)]
