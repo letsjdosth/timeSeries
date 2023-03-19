@@ -623,20 +623,39 @@ class DLM_univariate_y_without_V_in_D0:
             self._retro_one_iter(t, k)
 
     #forecast analysis
-    def _forecast_one_iter(self, t_k):
+    def _make_Rst_t_Wst_t(self, P_t_k, t_k):
+        Wst_t_k = self.DLM_model.Wst_sys_eq_scale_free_covariance[t_k-1]
+        Rst_t_k = P_t_k + Wst_t_k
+        return Rst_t_k, Wst_t_k
+
+    def _forecast_one_iter(self, t_k, t_of_given_Dt):
         G_t_k = self.DLM_model.G_sys_eq_transition[t_k-1]
         a_t_k = G_t_k @ self.fa_forecast_state_mean_a[-1]
-        R_t_k = G_t_k @ self.fR_forecast_state_scale_R[-1] @ np.transpose(G_t_k) + self.DLM_model.Wst_sys_eq_scale_free_covariance[t_k-1]
+
+        if t_k > self.y_len: #extrapolation over y_len
+            G_t_1 = self.DLM_model.G_sys_eq_transition[t_of_given_Dt]
+            Pst_1 = G_t_1 @ self.Cst_posterior_var[-1] @ np.transpose(G_t_1)
+            _, Wt_1 = self._make_Rst_t_Wst_t(Pst_1, t_k) #W_t_1 is from the model container in this case, because we know W_st_t
+
+            R_t_k = G_t_k @ self.fR_forecast_state_scale_R[-1] @ np.transpose(G_t_k) + Wt_1 #modified by chap6.3
+
+            F_t_k = self.DLM_model.F_obs_eq_design[t_k-1]
+            f_t_k = np.transpose(F_t_k) @ a_t_k
+            Q_t_k = np.transpose(F_t_k) @ R_t_k @ F_t_k + self.S_precision_rate[t_of_given_Dt-1] #modified
+
+        else:
+            P_t_k = G_t_k @ self.fR_forecast_state_scale_R[-1] @ np.transpose(G_t_k)
+            R_t_k, _ = self._make_Rst_t_Wst_t(P_t_k, t_k)
         
-        F_t_k = self.DLM_model.F_obs_eq_design[t_k-1]
-        f_t_k = np.transpose(F_t_k) @ a_t_k
-        Q_t_k = np.transpose(F_t_k) @ R_t_k @ F_t_k + self.S_precision_rate[t_k-1]
+            F_t_k = self.DLM_model.F_obs_eq_design[t_k-1]
+            f_t_k = np.transpose(F_t_k) @ a_t_k
+            Q_t_k = np.transpose(F_t_k) @ R_t_k @ F_t_k + self.S_precision_rate[t_k-1]
 
         self.fa_forecast_state_mean_a.append(a_t_k)
         self.fR_forecast_state_scale_R.append(R_t_k)
         self.ff_forecast_obs_mean_f.append(f_t_k)
         self.fQ_forecast_obs_scale_Q.append(Q_t_k)
-        
+
     def run_forecast_analysis(self, t_of_given_Dt, K_end_step):
         t = t_of_given_Dt
         self.fa_forecast_state_mean_a = [self.m_posterior_mean[t-1]]
@@ -646,7 +665,7 @@ class DLM_univariate_y_without_V_in_D0:
 
 
         for t_k in range(t_of_given_Dt + 1, K_end_step + 1):
-            self._forecast_one_iter(t_k)
+            self._forecast_one_iter(t_k, t_of_given_Dt)
 
         self.fa_forecast_state_mean_a = self.fa_forecast_state_mean_a[1:]
         self.fR_forecast_state_scale_R = self.fR_forecast_state_scale_R[1:]

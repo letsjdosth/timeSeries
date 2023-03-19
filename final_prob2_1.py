@@ -4,7 +4,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pyBayes.DLM_Core import DLM_model_container, DLM_simulator, DLM_without_W_by_discounting, DLM_visualizer
+from pyBayes.DLM_Core import DLM_model_container, DLM_simulator, DLM_without_W_by_discounting, DLM_visualizer, DLM_univariate_y_without_V_in_D0
 from ts_util.time_series_utils import difference_oper, autocorr
 
 # ===
@@ -90,7 +90,8 @@ data2_theta, data2_y = simulator2_inst.get_theta_y()
 optimal_delta = 0
 optimal_mse = math.inf
 for delta in np.linspace(0.5, 1, num=51, endpoint=True):
-    model2c_d095_container = DLM_model_container(102)
+    model2c_d095_container = DLM_model_container(102) 
+    #because DLM_without_W_by_discounting modifies the container, we should make a new one for each time
     model2c_d095_container.set_F_const_design_mat(np.array([[1]]))
     model2c_d095_container.set_G_const_transition_mat(np.array([[1]]))
     model2c_d095_container.set_V_const_obs_eq_covariance(np.array([[100]]))
@@ -174,4 +175,68 @@ model2c_d080_fit_inst.run_forecast_analysis(102, 112)
 # model2c_d080_vis_inst.show_one_step_forecast(show=False, title_str="")
 # model2c_d080_vis_inst.show_forecasting()
 # plt.show()
+
+
+# === 2d
+
+model2d_d095_container = DLM_model_container(102+10)
+model2d_d095_container.set_F_const_design_mat(np.array([[1],[0]]))
+model2d_d095_container.set_G_const_transition_mat(np.array([
+    [1,1],
+    [0,1]
+]))
+model2d_d095_container.set_Wst_const_state_error_scale_free_cov(np.array([
+    [(1-0.95**2), (1-0.95)**2],
+    [(1-0.95)**2, (1-0.95)**3]
+]))
+model2d_d095_fit_inst = DLM_univariate_y_without_V_in_D0(
+    data1_y, model2d_d095_container,
+    np.array([0,0]),
+    np.array([[1,0],[0,1]]),
+    0.01,
+    1
+)
+model2d_d095_fit_inst.run()
+model2d_d095_fit_inst.run_retrospective_analysis()
+model2d_d095_fit_inst.run_forecast_analysis(102, 112)
+
+# model2d_d095_vis_inst = DLM_visualizer(model2d_d095_fit_inst, 0.95, True)
+# model2d_d095_vis_inst.show_one_step_forecast()
+# model2d_d095_vis_inst.show_filtering((1,2))
+# model2d_d095_vis_inst.show_smoothing((1,2))
+# model2d_d095_vis_inst.show_one_step_forecast(show=False, title_str="")
+# model2d_d095_vis_inst.show_forecasting()
+# plt.show()
+
+# ===
+
+model2d_d080_container = DLM_model_container(102+10)
+model2d_d080_container.set_F_const_design_mat(np.array([[1],[0]]))
+model2d_d080_container.set_G_const_transition_mat(np.array([
+    [1,1],
+    [0,1]
+]))
+model2d_d080_container.set_Wst_const_state_error_scale_free_cov(np.array([
+    [(1-0.8**2), (1-0.8)**2],
+    [(1-0.8)**2, (1-0.8)**3]
+]))
+model2d_d080_fit_inst = DLM_univariate_y_without_V_in_D0(
+    data2_y, model2d_d080_container,
+    np.array([0,0]),
+    np.array([[1,0],[0,1]]),
+    0.01,
+    1
+)
+model2d_d080_fit_inst.run()
+model2d_d080_fit_inst.run_retrospective_analysis()
+model2d_d080_fit_inst.run_forecast_analysis(102, 112)
+
+# model2d_d080_vis_inst = DLM_visualizer(model2d_d080_fit_inst, cred=0.95, is_used_t_dist=True)
+# model2d_d080_vis_inst.show_one_step_forecast()
+# model2d_d080_vis_inst.show_filtering((1,2))
+# model2d_d080_vis_inst.show_smoothing((1,2))
+# model2d_d080_vis_inst.show_one_step_forecast(show=False, title_str="")
+# model2d_d080_vis_inst.show_forecasting()
+# plt.show()
+
 
