@@ -18,47 +18,47 @@ with open('dataset/UCSC.csv', newline='\n') as csvfile:
 
 data_T = len(data_gtidx) # 146
 
-# plt.plot(data_gtidx)
-# plt.xticks(range(0, data_T, 12), labels=data_date[0:data_T:12], rotation=45)
-# plt.show()
+plt.plot(data_gtidx)
+plt.xticks(range(0, data_T, 12), labels=data_date[0:data_T:12], rotation=45)
+plt.show()
 
 # ===== annual sense based
-# fig_anncycle, ax_anncycle = plt.subplots(3, 1)
-# ax_anncycle[0].plot(data_gtidx)
-# ax_anncycle[0].vlines([x if x%12==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="red", linestyles='dashed')
-# ax_anncycle[1].plot(data_gtidx)
-# ax_anncycle[1].vlines([x if x%6==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="red", linestyles='dashed')
-# ax_anncycle[2].plot(data_gtidx)
-# ax_anncycle[2].set_xticks(range(0, data_T, 12), rotation=45)
-# ax_anncycle[2].set_xticklabels(data_date[0:data_T:12], rotation=45)
-# ax_anncycle[2].vlines([x if x%3==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="red", linestyles='dashed')
-# plt.show()
+fig_anncycle, ax_anncycle = plt.subplots(3, 1)
+ax_anncycle[0].plot(data_gtidx)
+ax_anncycle[0].vlines([x if x%12==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="red", linestyles='dashed')
+ax_anncycle[1].plot(data_gtidx)
+ax_anncycle[1].vlines([x if x%6==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="red", linestyles='dashed')
+ax_anncycle[2].plot(data_gtidx)
+ax_anncycle[2].set_xticks(range(0, data_T, 12), rotation=45)
+ax_anncycle[2].set_xticklabels(data_date[0:data_T:12], rotation=45)
+ax_anncycle[2].vlines([x if x%3==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="red", linestyles='dashed')
+plt.show()
 
 # ===== periodogram based
 data_gtidx_fft = np.fft.rfft(data_gtidx)
 periodogram_grid = np.linspace(0, np.pi, num=int(data_T/2)+1, endpoint=True)
 periodogram_data_gtidx = [f*f.conjugate()/(data_T*2*np.pi) for f in data_gtidx_fft]
-# plt.plot(periodogram_grid, np.log(periodogram_data_gtidx))
-# plt.title("log periodogram")
-# plt.show()
+plt.plot(periodogram_grid, np.log(periodogram_data_gtidx))
+plt.title("log periodogram")
+plt.show()
 
 for freq, val in zip(periodogram_grid, periodogram_data_gtidx):
     if np.log(val) > 5:
         period = 2*np.pi/freq
         print(freq, period, val)
 
-# fig_perio_cycle, ax_perio_cycle = plt.subplots(4, 1)
-# ax_perio_cycle[0].plot(data_gtidx)
-# ax_perio_cycle[0].vlines([x if x%73==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="orange", linestyles='dashed')
-# ax_perio_cycle[1].plot(data_gtidx)
-# ax_perio_cycle[1].vlines([x if x%48==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="orange", linestyles='dashed')
-# ax_perio_cycle[2].plot(data_gtidx)
-# ax_perio_cycle[2].vlines([x if x%12==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="orange", linestyles='dashed')
-# ax_perio_cycle[3].plot(data_gtidx)
-# ax_perio_cycle[3].vlines([x if x%6==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="orange", linestyles='dashed')
-# ax_perio_cycle[3].set_xticks(range(0, data_T, 12), rotation=45)
-# ax_perio_cycle[3].set_xticklabels(data_date[0:data_T:12], rotation=45)
-# plt.show()
+fig_perio_cycle, ax_perio_cycle = plt.subplots(4, 1)
+ax_perio_cycle[0].plot(data_gtidx)
+ax_perio_cycle[0].vlines([x if x%73==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="orange", linestyles='dashed')
+ax_perio_cycle[1].plot(data_gtidx)
+ax_perio_cycle[1].vlines([x if x%48==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="orange", linestyles='dashed')
+ax_perio_cycle[2].plot(data_gtidx)
+ax_perio_cycle[2].vlines([x if x%12==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="orange", linestyles='dashed')
+ax_perio_cycle[3].plot(data_gtidx)
+ax_perio_cycle[3].vlines([x if x%6==0 else 0 for x in range(data_T)], ymin=0, ymax=100, colors="orange", linestyles='dashed')
+ax_perio_cycle[3].set_xticks(range(0, data_T, 12), rotation=45)
+ax_perio_cycle[3].set_xticklabels(data_date[0:data_T:12], rotation=45)
+plt.show()
 
 # ===== 1-b,c
 
@@ -67,10 +67,10 @@ data_gtidx_until_feb2020 = np.array([[y] for y in data_gtidx[:110]])
 # print(data_date_until_feb2020[-1])
 data_T_until_feb2020 = len(data_gtidx_until_feb2020) #110
 
-# plt.plot(data_gtidx)
-# plt.xticks(range(0, data_T, 12), labels=data_date[0:data_T:12], rotation=45)
-# plt.vlines([110], ymin=0, ymax=100, colors="blue", linestyles='dashed')
-# plt.show()
+plt.plot(data_gtidx)
+plt.xticks(range(0, data_T, 12), labels=data_date[0:data_T:12], rotation=45)
+plt.vlines([110], ymin=0, ymax=100, colors="blue", linestyles='dashed')
+plt.show()
 
 # 2nd-order polynomial(1st degree) + p=12, year/half-year/quarter
 
@@ -242,3 +242,16 @@ print(model1d_fit_inst.n_precision_shape[-1])
 print(model1d_fit_inst.S_precision_rate[-1])
 
 
+
+1  58.03  102.966  ( 38.142 , 77.919 )
+2  59.636  122.483  ( 37.945 , 81.327 )
+3  53.426  137.594  ( 30.435 , 76.416 )
+4  45.858  146.339  ( 22.148 , 69.567 )
+5  44.069  152.821  ( 19.84 , 68.298 )
+6  49.029  162.043  ( 24.08 , 73.979 )
+7  54.963  174.821  ( 29.048 , 80.878 )
+8  55.519  186.152  ( 28.778 , 82.26 )
+9  50.406  191.453  ( 23.287 , 77.526 )
+10  45.789  193.037  ( 18.557 , 73.02 )
+11  48.013  199.77  ( 20.311 , 75.715 )
+12  56.973  222.067  ( 27.766 , 86.18 )

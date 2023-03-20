@@ -5,9 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-from pyBayes.MCMC_Core import MCMC_Gibbs, MCMC_MH
+from pyBayes.MCMC_Core import MCMC_Gibbs, MCMC_MH, MCMC_Diag
 from pyBayes.DLM_Core import DLM_model_container, DLM_simulator, DLM_full_model, DLM_visualizer
-from ts_util.time_series_utils import difference_oper, autocorr
 from ts_util.least_squares import sym_defpos_matrix_inversion_cholesky
 
 # ===
@@ -186,6 +185,7 @@ class FFBS_final(MCMC_Gibbs):
                 thetas = last_param[0]
                 Gi = self.DLM_model.G_sys_eq_transition[i-1]
                 inv_W_delta, log_det_W_delta= sym_defpos_matrix_inversion_cholesky(Gi @ self.C[i-1] @ np.transpose(Gi) + W_delta)
+                # inv_W_delta, log_det_W_delta= sym_defpos_matrix_inversion_cholesky(W_delta)
                 innov_theta = thetas[i] - (Gi @ thetas[i-1])
                 post -= (np.transpose(innov_theta) @ inv_W_delta @ innov_theta/2 + log_det_W_delta/2)
             return post
@@ -203,46 +203,48 @@ model2e_container_inst.set_F_const_design_mat(np.array([[1],[0]]))
 model2e_container_inst.set_G_const_transition_mat(np.array([[1,1],[0,1]]))
 model2e_container_inst.set_V_const_obs_eq_covariance([100])
 gibbs_inst = FFBS_final(data2_y, model2e_container_inst, 0.9, 20230319)
-gibbs_inst.generate_samples(2500)
+gibbs_inst.generate_samples(3000)
 
-theta_samples = [x[0] for x in gibbs_inst.MC_sample[100:]]
+theta_samples = [x[0] for x in gibbs_inst.MC_sample[300:]]
 for theta in theta_samples:
     plt.plot([x[1] for x in theta], color="green")
     plt.plot([x[0] for x in theta], color="red")
 plt.plot(range(1,102+1), data2_y)
 plt.show()
 
-delta_samples = [x[1] for x in gibbs_inst.MC_sample[100:]]
-plt.plot(delta_samples)
-plt.show()
-plt.hist(delta_samples, bins=30)
-plt.show()
+delta_samples = [[x[1]] for x in gibbs_inst.MC_sample[300:]]
+delta_diag_inst = MCMC_Diag()
+delta_diag_inst.set_mc_samples_from_list(delta_samples)
+delta_diag_inst.set_variable_names(["delta"])
+delta_diag_inst.print_summaries(4)
+delta_diag_inst.show_traceplot((1,1))
+delta_diag_inst.show_hist((1,1))
 
 
 
 
-
+#(+)
 # choosing delta by optimization
-# optimal_delta = 0
-# optimal_mse = math.inf
-# for delta in np.linspace(0.1, 1, num=91, endpoint=True):
-#     model2e_dopt_container = DLM_model_container(102) 
-#     model2e_dopt_container.set_F_const_design_mat(np.array([[1],[0]]))
-#     model2e_dopt_container.set_G_const_transition_mat(np.array([[1,1],[0,1]]))
-#     model2e_dopt_container.set_V_const_obs_eq_covariance(np.array([[100]]))
-#     model2e_dopt_container.set_W_const_state_error_cov(100*np.array([
-#         [1-(delta**2), (1-delta)**2],
-#         [(1-delta)**2, (1-delta)**3]
-#     ]))
-#     model2e_dopt_fit_inst = DLM_full_model(
-#         data2_y, model2e_dopt_container,
-#         np.array([100,0]),
-#         np.array([[1,0],[0,1]])
-#     )
-#     model2e_dopt_fit_inst.run()
-#     mse_onestep_f = np.mean([e**2 for e in model2e_dopt_fit_inst.e_one_step_forecast_err])
-#     if mse_onestep_f < optimal_mse:
-#         optimal_delta = delta
-#         optimal_mse = mse_onestep_f
-# print(optimal_delta, optimal_mse)  # 0.77 189.8744434187878
+optimal_delta = 0
+optimal_mse = math.inf
+for delta in np.linspace(0.1, 1, num=91, endpoint=True):
+    model2e_dopt_container = DLM_model_container(102) 
+    model2e_dopt_container.set_F_const_design_mat(np.array([[1],[0]]))
+    model2e_dopt_container.set_G_const_transition_mat(np.array([[1,1],[0,1]]))
+    model2e_dopt_container.set_V_const_obs_eq_covariance(np.array([[100]]))
+    model2e_dopt_container.set_W_const_state_error_cov(100*np.array([
+        [1-(delta**2), (1-delta)**2],
+        [(1-delta)**2, (1-delta)**3]
+    ]))
+    model2e_dopt_fit_inst = DLM_full_model(
+        data2_y, model2e_dopt_container,
+        np.array([100,0]),
+        np.array([[1,0],[0,1]])
+    )
+    model2e_dopt_fit_inst.run()
+    mse_onestep_f = np.mean([e**2 for e in model2e_dopt_fit_inst.e_one_step_forecast_err])
+    if mse_onestep_f < optimal_mse:
+        optimal_delta = delta
+        optimal_mse = mse_onestep_f
+print(optimal_delta, optimal_mse)  # 0.77 189.8744434187878
 
