@@ -92,27 +92,26 @@ model1a_model_inst.set_G_const_transition_mat(np.array([
     [0, 0, 0, 0, -np.sqrt(3)/2, 0.5]
 ]))
 
-
-# # choosing delta
-# optimal_delta_combination = (0, 0)
-# optimal_mse = math.inf
-# for delta_trend in np.linspace(0.7, 1, num=32, endpoint=True):
-#     for delta_seasonal in np.linspace(0.7, 1, num=32, endpoint=True):
-#         dlm_fit_inst = DLM_univariate_y_without_V_W_in_D0_with_component_discount_factor(data_gtidx_until_feb2020, model1a_model_inst,
-#                                                         initial_m0_given_D0 = np.array([0,0,0,0,0,0]),
-#                                                         initial_C0st_given_D0 = np.eye(6,6), #identity
-#                                                         n0_given_D0 = 0.01,
-#                                                         S0_given_D0 = 1,
-#                                                         discount_factor_tuple=(delta_trend, delta_seasonal, delta_seasonal),
-#                                                         discount_component_blocks_partition=(2,4,6)
-#         )
-#         dlm_fit_inst.run()
-#         mse_onestep_f = np.sum([e**2 for e in dlm_fit_inst.e_one_step_forecast_err])/data_T
-#         # print("delta:(", delta_trend, ",", delta_seasonal, ") mse:", mse_onestep_f)
-#         if mse_onestep_f < optimal_mse:
-#             optimal_delta_combination = (delta_trend, delta_seasonal)
-#             optimal_mse = mse_onestep_f
-# print(optimal_delta_combination, optimal_mse) #(0.8548387096774194, 0.9806451612903226) 167.06709700556627
+# choosing delta
+optimal_delta_combination = (0, 0)
+optimal_mse = math.inf
+for delta_trend in np.linspace(0.7, 1, num=32, endpoint=True):
+    for delta_seasonal in np.linspace(0.7, 1, num=32, endpoint=True):
+        dlm_fit_inst = DLM_univariate_y_without_V_W_in_D0_with_component_discount_factor(data_gtidx_until_feb2020, model1a_model_inst,
+                                                        initial_m0_given_D0 = np.array([0,0,0,0,0,0]),
+                                                        initial_C0st_given_D0 = np.eye(6,6), #identity
+                                                        n0_given_D0 = 0.01,
+                                                        S0_given_D0 = 1,
+                                                        discount_factor_tuple=(delta_trend, delta_seasonal, delta_seasonal),
+                                                        discount_component_blocks_partition=(2,4,6)
+        )
+        dlm_fit_inst.run()
+        mse_onestep_f = np.sum([e**2 for e in dlm_fit_inst.e_one_step_forecast_err])/data_T
+        # print("delta:(", delta_trend, ",", delta_seasonal, ") mse:", mse_onestep_f)
+        if mse_onestep_f < optimal_mse:
+            optimal_delta_combination = (delta_trend, delta_seasonal)
+            optimal_mse = mse_onestep_f
+print(optimal_delta_combination, optimal_mse) #(0.8548387096774194, 0.9806451612903226) 167.06709700556627
 
 model1a_fit_inst = DLM_univariate_y_without_V_W_in_D0_with_component_discount_factor(data_gtidx_until_feb2020, model1a_model_inst,
                                                     initial_m0_given_D0 = np.array([0,0,0,0,0,0]),
@@ -156,7 +155,6 @@ print(model1a_fit_inst.n_precision_shape[-1])
 print(model1a_fit_inst.S_precision_rate[-1])
 
 
-
 # # ===== 1-d
 # # 2nd-order polynomial(1st degree) + p=12, year/half-year/quarter
 
@@ -180,25 +178,25 @@ model1d_model_inst.set_G_const_transition_mat(np.array([
 
 
 # choosing delta
-# optimal_delta_combination = (0, 0)
-# optimal_mse = math.inf
-# for delta_trend in np.linspace(0.7, 1, num=32, endpoint=True):
-#     for delta_seasonal in np.linspace(0.7, 1, num=32, endpoint=True):
-#         dlm_fit_inst = DLM_univariate_y_without_V_W_in_D0_with_component_discount_factor(data_gtidx, model1d_model_inst,
-#                                                         initial_m0_given_D0 = np.array([0,0,0,0,0,0]),
-#                                                         initial_C0st_given_D0 = np.eye(6,6), #identity
-#                                                         n0_given_D0 = 0.01,
-#                                                         S0_given_D0 = 1,
-#                                                         discount_factor_tuple=(delta_trend, delta_seasonal, delta_seasonal),
-#                                                         discount_component_blocks_partition=(2,4,6)
-#         )
-#         dlm_fit_inst.run()
-#         mse_onestep_f = np.sum([e**2 for e in dlm_fit_inst.e_one_step_forecast_err])/data_T
-#         # print("delta:(", delta_trend, ",", delta_seasonal, ") mse:", mse_onestep_f)
-#         if mse_onestep_f < optimal_mse:
-#             optimal_delta_combination = (delta_trend, delta_seasonal)
-#             optimal_mse = mse_onestep_f
-# print(optimal_delta_combination, optimal_mse) # (0.8161290322580645, 0.9612903225806452) 187.30119118548356
+optimal_delta_combination = (0, 0)
+optimal_mse = math.inf
+for delta_trend in np.linspace(0.7, 1, num=32, endpoint=True):
+    for delta_seasonal in np.linspace(0.7, 1, num=32, endpoint=True):
+        dlm_fit_inst = DLM_univariate_y_without_V_W_in_D0_with_component_discount_factor(data_gtidx, model1d_model_inst,
+                                                        initial_m0_given_D0 = np.array([0,0,0,0,0,0]),
+                                                        initial_C0st_given_D0 = np.eye(6,6), #identity
+                                                        n0_given_D0 = 0.01,
+                                                        S0_given_D0 = 1,
+                                                        discount_factor_tuple=(delta_trend, delta_seasonal, delta_seasonal),
+                                                        discount_component_blocks_partition=(2,4,6)
+        )
+        dlm_fit_inst.run()
+        mse_onestep_f = np.sum([e**2 for e in dlm_fit_inst.e_one_step_forecast_err])/data_T
+        # print("delta:(", delta_trend, ",", delta_seasonal, ") mse:", mse_onestep_f)
+        if mse_onestep_f < optimal_mse:
+            optimal_delta_combination = (delta_trend, delta_seasonal)
+            optimal_mse = mse_onestep_f
+print(optimal_delta_combination, optimal_mse) # (0.8161290322580645, 0.9612903225806452) 187.30119118548356
 
 model1d_fit_inst = DLM_univariate_y_without_V_W_in_D0_with_component_discount_factor(data_gtidx, model1d_model_inst,
                                                     initial_m0_given_D0 = np.array([0,0,0,0,0,0]),
@@ -240,18 +238,3 @@ plt.show()
 # v|D_T, v~inv.gamma(,)
 print(model1d_fit_inst.n_precision_shape[-1])
 print(model1d_fit_inst.S_precision_rate[-1])
-
-
-
-1  58.03  102.966  ( 38.142 , 77.919 )
-2  59.636  122.483  ( 37.945 , 81.327 )
-3  53.426  137.594  ( 30.435 , 76.416 )
-4  45.858  146.339  ( 22.148 , 69.567 )
-5  44.069  152.821  ( 19.84 , 68.298 )
-6  49.029  162.043  ( 24.08 , 73.979 )
-7  54.963  174.821  ( 29.048 , 80.878 )
-8  55.519  186.152  ( 28.778 , 82.26 )
-9  50.406  191.453  ( 23.287 , 77.526 )
-10  45.789  193.037  ( 18.557 , 73.02 )
-11  48.013  199.77  ( 20.311 , 75.715 )
-12  56.973  222.067  ( 27.766 , 86.18 )

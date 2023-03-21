@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 
 
 from pyBayes.MCMC_Core import MCMC_Gibbs, MCMC_MH, MCMC_Diag
-from pyBayes.DLM_Core import DLM_model_container, DLM_simulator, DLM_full_model, DLM_visualizer
+from pyBayes.DLM_Core import DLM_model_container, DLM_simulator, DLM_full_model
 from ts_util.least_squares import sym_defpos_matrix_inversion_cholesky
+from ts_util.time_series_utils import difference_oper, autocorr
 
 # ===
 delta1 = 0.95
@@ -26,27 +27,6 @@ simulator1_inst = DLM_simulator(true_model1_inst, 20230318)
 simulator1_inst.simulate_data(np.array([100, 0]), 
                               100*np.array([[1-delta1**2, (1-delta1)**2],[(1-delta1)**2, (1-delta1)**3]]))
 data1_theta, data1_y = simulator1_inst.get_theta_y()
-
-
-# fig_sim1, ax_sim1 = plt.subplots(3,3,figsize=(12, 4))
-# fig_sim1.tight_layout()
-# ax_sim1[0,0].plot(data1_y)
-# ax_sim1[0,0].set_title("y")
-# ax_sim1[0,1].plot(difference_oper(data1_y))
-# ax_sim1[0,1].set_title("diff1(y)")
-# ax_sim1[0,2].plot(difference_oper(difference_oper(data1_y)))
-# ax_sim1[0,2].set_title("diff2(y)")
-# ax_sim1[1,0].bar(range(51), autocorr(data1_y,50))
-# ax_sim1[1,0].set_title("y,acf")
-# ax_sim1[1,1].bar(range(51), autocorr(difference_oper(data1_y),50))
-# ax_sim1[1,1].set_title("diff1(y),acf")
-# ax_sim1[1,2].bar(range(51), autocorr(difference_oper(difference_oper(data1_y)),50))
-# ax_sim1[1,2].set_title("diff2(y),acf")
-# ax_sim1[2,0].plot([theta[0] for theta in data1_theta])
-# ax_sim1[2,0].set_title("theta1")
-# ax_sim1[2,1].plot([theta[1] for theta in data1_theta])
-# ax_sim1[2,1].set_title("theta2")
-# plt.show()
 
 # ===
 delta2 = 0.8
@@ -67,33 +47,33 @@ simulator2_inst.simulate_data(np.array([100, 0]),
 
 data2_theta, data2_y = simulator2_inst.get_theta_y()
 
-# fig_sim2, ax_sim2 = plt.subplots(3,3,figsize=(12, 4))
-# fig_sim2.tight_layout()
-# ax_sim2[0,0].plot(data2_y)
-# ax_sim2[0,0].set_title("y")
-# ax_sim2[0,1].plot(difference_oper(data2_y))
-# ax_sim2[0,1].set_title("diff1(y)")
-# ax_sim2[0,2].plot(difference_oper(difference_oper(data2_y)))
-# ax_sim2[0,2].set_title("diff2(y)")
-# ax_sim2[1,0].bar(range(51), autocorr(data2_y,50))
-# ax_sim2[1,0].set_title("y,acf")
-# ax_sim2[1,1].bar(range(51), autocorr(difference_oper(data2_y),50))
-# ax_sim2[1,1].set_title("diff1(y),acf")
-# ax_sim2[1,2].bar(range(51), autocorr(difference_oper(difference_oper(data2_y)),50))
-# ax_sim2[1,2].set_title("diff2(y),acf")
-# ax_sim2[2,0].plot([theta[0] for theta in data2_theta])
-# ax_sim2[2,0].set_title("theta1")
-# ax_sim2[2,1].plot([theta[1] for theta in data2_theta])
-# ax_sim2[2,1].set_title("theta2")
-# plt.show()
+fig_sim2, ax_sim2 = plt.subplots(3,3,figsize=(12, 4))
+fig_sim2.tight_layout()
+ax_sim2[0,0].plot(data2_y)
+ax_sim2[0,0].set_title("y")
+ax_sim2[0,1].plot(difference_oper(data2_y))
+ax_sim2[0,1].set_title("diff1(y)")
+ax_sim2[0,2].plot(difference_oper(difference_oper(data2_y)))
+ax_sim2[0,2].set_title("diff2(y)")
+ax_sim2[1,0].bar(range(51), autocorr(data2_y,50))
+ax_sim2[1,0].set_title("y,acf")
+ax_sim2[1,1].bar(range(51), autocorr(difference_oper(data2_y),50))
+ax_sim2[1,1].set_title("diff1(y),acf")
+ax_sim2[1,2].bar(range(51), autocorr(difference_oper(difference_oper(data2_y)),50))
+ax_sim2[1,2].set_title("diff2(y),acf")
+ax_sim2[2,0].plot([theta[0] for theta in data2_theta])
+ax_sim2[2,0].set_title("theta1")
+ax_sim2[2,1].plot([theta[1] for theta in data2_theta])
+ax_sim2[2,1].set_title("theta2")
+plt.show()
 
 
 class FFBS_final(MCMC_Gibbs):
-    def __init__(self, y_observation, DLM_model_container: DLM_model_container, initial_delta:float, seed_val):
+    def __init__(self, y_observation, dlm_model_container: DLM_model_container, initial_delta:float, seed_val):
         self.data_y = y_observation
         self.data_T = len(y_observation)
         seed(seed_val)
-        self.DLM_model = DLM_model_container
+        self.DLM_model = dlm_model_container
 
         #param
         # 0                           1
@@ -116,9 +96,9 @@ class FFBS_final(MCMC_Gibbs):
         # [[theta(0:T)](zero!! to T), delta]
         new_sample = [x for x in last_param]
 
-        delta = last_param[1]
-        W_delta = 100 * np.array([[1-delta**2, (1-delta)**2],
-                                    [(1-delta)**2, (1-delta)**3]])
+        last_delta = last_param[1]
+        W_delta = 100 * np.array([[1-last_delta**2, (1-last_delta)**2],
+                                    [(1-last_delta)**2, (1-last_delta)**3]])
         ffbs_model_container_inst = DLM_model_container(self.data_T)
         ffbs_model_container_inst.set_F_const_design_mat(np.array([[1],[0]]))
         ffbs_model_container_inst.set_G_const_transition_mat(np.array([[1,1],[0,1]]))
@@ -174,18 +154,18 @@ class FFBS_final(MCMC_Gibbs):
             applied_window = [max(0, from_smpl-window/2), min(1, from_smpl+window/2)]
             return [uniform(applied_window[0], applied_window[1])]
         
-        def log_target_pdf(delta):
-            delta = delta[0]
-            W_delta = 100 * np.array([[1-delta**2, (1-delta)**2],
-                                      [(1-delta)**2, (1-delta)**3]])
+        def log_target_pdf(now_delta):
+            now_delta = now_delta[0]
+            W_delta = 100 * np.array([[1-now_delta**2, (1-now_delta)**2],
+                                      [(1-now_delta)**2, (1-now_delta)**3]])
             # inv_W_delta, log_det_W_delta= sym_defpos_matrix_inversion_cholesky(W_delta)
 
             post = 0
             for i in range(1, self.data_T+1):
                 thetas = last_param[0]
                 Gi = self.DLM_model.G_sys_eq_transition[i-1]
-                inv_W_delta, log_det_W_delta= sym_defpos_matrix_inversion_cholesky(Gi @ self.C[i-1] @ np.transpose(Gi) + W_delta)
-                # inv_W_delta, log_det_W_delta= sym_defpos_matrix_inversion_cholesky(W_delta)
+                # inv_W_delta, log_det_W_delta= sym_defpos_matrix_inversion_cholesky(Gi @ self.C[i-1] @ np.transpose(Gi) + W_delta)
+                inv_W_delta, log_det_W_delta= sym_defpos_matrix_inversion_cholesky(W_delta)
                 innov_theta = thetas[i] - (Gi @ thetas[i-1])
                 post -= (np.transpose(innov_theta) @ inv_W_delta @ innov_theta/2 + log_det_W_delta/2)
             return post
@@ -202,7 +182,7 @@ model2e_container_inst = DLM_model_container(102)
 model2e_container_inst.set_F_const_design_mat(np.array([[1],[0]]))
 model2e_container_inst.set_G_const_transition_mat(np.array([[1,1],[0,1]]))
 model2e_container_inst.set_V_const_obs_eq_covariance([100])
-gibbs_inst = FFBS_final(data2_y, model2e_container_inst, 0.9, 20230319)
+gibbs_inst = FFBS_final(data2_y, model2e_container_inst, 0.5, 20230319)
 gibbs_inst.generate_samples(3000)
 
 theta_samples = [x[0] for x in gibbs_inst.MC_sample[300:]]
@@ -219,7 +199,7 @@ delta_diag_inst.set_variable_names(["delta"])
 delta_diag_inst.print_summaries(4)
 delta_diag_inst.show_traceplot((1,1))
 delta_diag_inst.show_hist((1,1))
-
+delta_diag_inst.show_acf(30, (1,1))
 
 
 
